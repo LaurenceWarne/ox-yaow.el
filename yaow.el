@@ -30,13 +30,22 @@
 ;;; Code:
 
 (require 'ox)
+(require 'ox-html)
 
 (defvar yaow-html-head "<link rel=\"stylesheet\" type=\"text/css\" href=\"https://fniessen.github.io/org-html-themes/styles/readtheorg/css/htmlize.css\"/><link rel=\"stylesheet\" type=\"text/css\" href=\"https://fniessen.github.io/org-html-themes/styles/readtheorg/css/readtheorg.css\"/><script src=\"https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js\"></script><script src=\"https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js\"></script><script type=\"text/javascript\" src=\"https://fniessen.github.io/org-html-themes/styles/lib/js/jquery.stickytableheaders.min.js\"></script><script type=\"text/javascript\" src=\"https://fniessen.github.io/org-html-themes/styles/readtheorg/js/readtheorg.js\"></script>")
 
 (defun yaow-headline (headline contents info)
   "Transcode HEADLINE element into yaow html format.
 CONTENTS is the headline contents.  INFO is a plist used as a
-communication channel.")
+communication channel."
+  (let ((level (org-export-get-relative-level headline info)))
+    (if (= level 1)
+	(progn
+	  (message (format "Headline: %s, level: %s"
+			   (org-element-property :raw-value headline);(plist-get info :input-file)
+			   level))
+	  (message (org-html-headline headline contents info)))
+      (org-html-headline headline contents info))))
 
 (defun yaow-org-export-to-html
     (&optional async subtreep visible-only body-only ext-plist)
@@ -44,16 +53,16 @@ communication channel.")
   (let* ((extension ".html")
 	 (file (org-export-output-file-name extension subtreep))
 	 (org-export-coding-system 'utf-8))
-    (org-export-to-file 'lw-wiki-html file
+    (org-export-to-file 'yaow-html file
       async subtreep visible-only body-only ext-plist)))
 
-(org-export-define-derived-backend 'yaow-wiki-html 'html
+(org-export-define-derived-backend 'yaow-html 'html
   :options-alist `((:html-head "HTML_HEAD" nil ,yaow-html-head newline))
   :menu-entry
   '(?h "Export to HTML"
        ((?w "As yaow wiki file" yaow-org-export-to-html)))
   :translate-alist
-  '((headline . yaow-wiki-html-headline)))
+  '((headline . yaow-headline)))
 
 
 (provide 'yaow)
