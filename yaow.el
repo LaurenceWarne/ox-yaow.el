@@ -36,6 +36,24 @@
 
 (defvar yaow-html-head "<link rel=\"stylesheet\" type=\"text/css\" href=\"https://fniessen.github.io/org-html-themes/styles/readtheorg/css/htmlize.css\"/><link rel=\"stylesheet\" type=\"text/css\" href=\"https://fniessen.github.io/org-html-themes/styles/readtheorg/css/readtheorg.css\"/><script src=\"https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js\"></script><script src=\"https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js\"></script><script type=\"text/javascript\" src=\"https://fniessen.github.io/org-html-themes/styles/lib/js/jquery.stickytableheaders.min.js\"></script><script type=\"text/javascript\" src=\"https://fniessen.github.io/org-html-themes/styles/readtheorg/js/readtheorg.js\"></script>")
 
+
+(defun yaow--get-html-relative-link (org-file link-text)
+  "Return a HTML link element with text LINK-TEXT which points to a file with the same name as ORG-FILE, but with a .html extension (ie a relative link)."
+  (let* ((base (f-no-ext org-file))
+	 (html-name (concat base ".html")))
+    (concat "<a href='./" html-name "'>" link-text "</a>")))
+
+(defun yaow--get-adjacent-files (base-file files)
+  "Return a cons cell whose car is the file from FILES preceding BASE-FILE, and whose cdr is the file from FILES succeeding BASE-FILE.  nil is used in place of files if such a file does not exist.  nil is returned if BASE-FILE is not in FILES."
+  (let* ((sorted-files (sort files #'string-lessp))
+	 (position (cl-position base-file files :test #'string=)))
+    (if position
+	(let ((prev-idx (1- position))
+	      (nxt-idx (1+ position)))
+	  `(,(if (>= prev-idx 0) (nth prev-idx sorted-files) nil) .
+	    ,(if (< nxt-idx (length files)) (nth nxt-idx sorted-files) nil)))
+      nil)))
+
 (defun yaow-headline (headline contents info)
   "Transcode HEADLINE element into yaow html format.
 CONTENTS is the headline contents.  INFO is a plist used as a
