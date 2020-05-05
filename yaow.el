@@ -7,7 +7,7 @@
 ;; Version: 0.1
 ;; Keywords: org
 ;; URL: https://github.com/LaurenceWarne/yaow.el
-;; Package-Requires: ((emacs "26"))
+;; Package-Requires: ((emacs "26") (f "0.2.0") (s "1.12.0"))
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -31,6 +31,8 @@
 
 (require 'ox)
 (require 'ox-html)
+(require 's)
+(require 'f)
 
 (defvar yaow-html-head "<link rel=\"stylesheet\" type=\"text/css\" href=\"https://fniessen.github.io/org-html-themes/styles/readtheorg/css/htmlize.css\"/><link rel=\"stylesheet\" type=\"text/css\" href=\"https://fniessen.github.io/org-html-themes/styles/readtheorg/css/readtheorg.css\"/><script src=\"https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js\"></script><script src=\"https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js\"></script><script type=\"text/javascript\" src=\"https://fniessen.github.io/org-html-themes/styles/lib/js/jquery.stickytableheaders.min.js\"></script><script type=\"text/javascript\" src=\"https://fniessen.github.io/org-html-themes/styles/readtheorg/js/readtheorg.js\"></script>")
 
@@ -40,11 +42,14 @@ CONTENTS is the headline contents.  INFO is a plist used as a
 communication channel."
   (let ((level (org-export-get-relative-level headline info)))
     (if (= level 1)
-	(progn
-	  (message (format "Headline: %s, level: %s"
-			   (org-element-property :raw-value headline);(plist-get info :input-file)
-			   level))
-	  (message (org-html-headline headline contents info)))
+	(let* ((directory (f-dirname (plist-get info :input-file)))
+	       (org-files-same-level
+		(f-files directory (lambda (file) (s-suffix? "org" file))))
+	       (base-html (org-html-headline headline contents info)))
+	  (message (format "files in same directory: %s"
+			   org-files-same-level))
+	  (message base-html)
+	  (replace-regexp-in-string "</h2>" "</h2><small>Hi!</small>" base-html))
       (org-html-headline headline contents info))))
 
 (defun yaow-org-export-to-html
