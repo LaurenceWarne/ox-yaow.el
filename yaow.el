@@ -37,15 +37,19 @@
 (defvar yaow-html-head "<link rel=\"stylesheet\" type=\"text/css\" href=\"https://fniessen.github.io/org-html-themes/styles/readtheorg/css/htmlize.css\"/><link rel=\"stylesheet\" type=\"text/css\" href=\"https://fniessen.github.io/org-html-themes/styles/readtheorg/css/readtheorg.css\"/><script src=\"https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js\"></script><script src=\"https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js\"></script><script type=\"text/javascript\" src=\"https://fniessen.github.io/org-html-themes/styles/lib/js/jquery.stickytableheaders.min.js\"></script><script type=\"text/javascript\" src=\"https://fniessen.github.io/org-html-themes/styles/readtheorg/js/readtheorg.js\"></script>")
 
 
+(defun yaow--get-file-ordering-from-index (indexing-file-path)
+  )
+
+
 (defun yaow--get-html-relative-link (org-file link-text)
   "Return a HTML link element with text LINK-TEXT which points to a file with the same name as ORG-FILE, but with a .html extension (ie a relative link)."
   (let* ((base (f-no-ext org-file))
 	 (html-name (concat base ".html")))
     (concat "<a href='./" html-name "'>" link-text "</a>")))
 
-(defun yaow--get-adjacent-files (base-file files)
-  "Return a cons cell whose car is the file from FILES preceding BASE-FILE, and whose cdr is the file from FILES succeeding BASE-FILE.  nil is used in place of files if such a file does not exist.  nil is returned if BASE-FILE is not in FILES."
-  (let* ((sorted-files (sort files #'string-lessp))
+(cl-defun yaow--get-adjacent-files (base-file files &key (sort t))
+  "Return a cons cell whose car is the file from FILES preceding BASE-FILE, and whose cdr is the file from FILES succeeding BASE-FILE.  If order is t, then sort BASE-FILES first.  nil is used in place of files if such a file does not exist.  nil is returned if BASE-FILE is not in FILES."
+  (let* ((sorted-files (if sort (sort files #'string-lessp) files))
 	 (position (cl-position base-file files :test #'string=)))
     (if position
 	(let ((prev-idx (1- position))
