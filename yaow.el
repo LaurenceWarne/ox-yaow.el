@@ -33,13 +33,23 @@
 (require 'ox-html)
 (require 's)
 (require 'f)
+(require 'dash)
 
 (defvar yaow-html-head "<link rel=\"stylesheet\" type=\"text/css\" href=\"https://fniessen.github.io/org-html-themes/styles/readtheorg/css/htmlize.css\"/><link rel=\"stylesheet\" type=\"text/css\" href=\"https://fniessen.github.io/org-html-themes/styles/readtheorg/css/readtheorg.css\"/><script src=\"https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js\"></script><script src=\"https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js\"></script><script type=\"text/javascript\" src=\"https://fniessen.github.io/org-html-themes/styles/lib/js/jquery.stickytableheaders.min.js\"></script><script type=\"text/javascript\" src=\"https://fniessen.github.io/org-html-themes/styles/readtheorg/js/readtheorg.js\"></script>")
 
+(defun yaow--get-file-ordering-from-index-tree (tree)
+  (let ((snd-level-headlines (org-element-map tree 'headline
+			       (lambda (hl)
+				 (and (= 2 (org-element-property :level hl)) hl)))))
+    ;; Get raw headline and convert to "emacs case"
+    (--map (concat (downcase (s-replace " " "-" (org-element-property :raw-value it)))
+		   ".org")
+	   snd-level-headlines)))
 
 (defun yaow--get-file-ordering-from-index (indexing-file-path)
-  )
-
+  (with-temp-buffer
+    (insert-file-contents indexing-file-path)
+    (yaow--get-file-ordering-from-index-tree (org-element-parse-buffer))))
 
 (defun yaow--get-html-relative-link (org-file link-text)
   "Return a HTML link element with text LINK-TEXT which points to a file with the same name as ORG-FILE, but with a .html extension (ie a relative link)."
