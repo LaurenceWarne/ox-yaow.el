@@ -38,13 +38,17 @@
 (defvar yaow-html-head "<link rel=\"stylesheet\" type=\"text/css\" href=\"https://fniessen.github.io/org-html-themes/styles/readtheorg/css/htmlize.css\"/><link rel=\"stylesheet\" type=\"text/css\" href=\"https://fniessen.github.io/org-html-themes/styles/readtheorg/css/readtheorg.css\"/><script src=\"https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js\"></script><script src=\"https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js\"></script><script type=\"text/javascript\" src=\"https://fniessen.github.io/org-html-themes/styles/lib/js/jquery.stickytableheaders.min.js\"></script><script type=\"text/javascript\" src=\"https://fniessen.github.io/org-html-themes/styles/readtheorg/js/readtheorg.js\"></script>")
 
 (defun yaow--get-file-ordering-from-index-tree (tree)
+  "Get the ordering of files suggested by headlines collected from TREE."
   (let ((snd-level-headlines (org-element-map tree 'headline
 			       (lambda (hl)
 				 (and (= 2 (org-element-property :level hl)) hl)))))
     ;; Get raw headline and convert to "emacs case"
-    (--map (concat (downcase (s-replace " " "-" (org-element-property :raw-value it)))
-		   ".org")
-	   snd-level-headlines)))
+    (--map (concat (downcase (s-replace " " "-" it)) ".org")
+	   ;; Kill links
+	   (--map (replace-regexp-in-string
+		   ".*\\[\\[.+\\]\\[\\(.+\\)\\]\\].*" "\\1"
+		   (org-element-property :raw-value it))
+		  snd-level-headlines))))
 
 (defun yaow--get-file-ordering-from-index (indexing-file-path)
   (with-temp-buffer
