@@ -35,13 +35,24 @@
 (require 'f)
 (require 'dash)
 
+(defgroup yaow nil
+  "A lightweight wiki export option."
+  :group 'ox)
+
+(defcustom yaow-headlline-point-to-file-p
+  (lambda (hl) (= 2 (org-element-property :level hl)))
+  "A function that returns true if some headline element points to an org file, else nil."
+  :group 'yaow
+  :type 'function)
+
+
 (defvar yaow-html-head "<link rel=\"stylesheet\" type=\"text/css\" href=\"https://fniessen.github.io/org-html-themes/styles/readtheorg/css/htmlize.css\"/><link rel=\"stylesheet\" type=\"text/css\" href=\"https://fniessen.github.io/org-html-themes/styles/readtheorg/css/readtheorg.css\"/><script src=\"https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js\"></script><script src=\"https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js\"></script><script type=\"text/javascript\" src=\"https://fniessen.github.io/org-html-themes/styles/lib/js/jquery.stickytableheaders.min.js\"></script><script type=\"text/javascript\" src=\"https://fniessen.github.io/org-html-themes/styles/readtheorg/js/readtheorg.js\"></script>")
 
-(defun yaow--get-file-ordering-from-index-tree (tree)
+(cl-defun yaow--get-file-ordering-from-index-tree (tree &key (headline-fun yaow-headlline-point-to-file-p))
   "Get the ordering of files suggested by headlines collected from TREE."
   (let ((snd-level-headlines (org-element-map tree 'headline
 			       (lambda (hl)
-				 (and (= 2 (org-element-property :level hl)) hl)))))
+				 (and (funcall headline-fun hl) hl)))))
     ;; Get raw headline and convert to "emacs case"
     (--map (concat (downcase (s-replace " " "-" it)) ".org")
 	   ;; Kill links
@@ -72,21 +83,20 @@
 	    ,(if (< nxt-idx (length files)) (nth nxt-idx sorted-files) nil)))
       nil)))
 
-(defun yaow-headline (headline contents info)
-  "Transcode HEADLINE element into yaow html format.
-CONTENTS is the headline contents.  INFO is a plist used as a
-communication channel."
-  (let ((level (org-export-get-relative-level headline info)))
-    (if (= level 1)
-	(let* ((directory (f-dirname (plist-get info :input-file)))
-	       (org-files-same-level
-		(f-files directory (lambda (file) (s-suffix? "org" file))))
-	       (base-html (org-html-headline headline contents info)))
-	  (message (format "files in same directory: %s"
-			   org-files-same-level))
-	  (message base-html)
-	  (replace-regexp-in-string "</h2>" "</h2><small>Hi!</small>" base-html))
-      (org-html-headline headline contents info))))
+(defun yaow-template (contents info)
+  "Transcode CONTENTS into yaow html format.  INFO is a plist used as a communication channel."
+  (let* ((filename (f-base (plist-get info :input-file)))
+	 (directory (f-dirname filename))
+	 (org-files-same-level
+	  (--map (f-base it) (f-files directory
+				      (lambda (file) (s-suffix? "org" file)))))
+	 (adj-files (yaow--get-adjacent-files filename org-files-same-level))
+	 (base-html (org-html-template contents info)))
+    (print org-files-same-level)
+    (replace-regexp-in-string "<h1"
+			      (concat "<a href=\"./" (car adj-files) ".html"
+				      "\">" (car adj-files) "</a><h1")
+			      base-html)))
 
 (defun yaow-org-export-to-html
     (&optional async subtreep visible-only body-only ext-plist)
@@ -103,7 +113,7 @@ communication channel."
   '(?h "Export to HTML"
        ((?w "As yaow wiki file" yaow-org-export-to-html)))
   :translate-alist
-  '((headline . yaow-headline)))
+  '((template . yaow-template)))
 
 
 (provide 'yaow)

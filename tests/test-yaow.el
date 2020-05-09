@@ -58,15 +58,18 @@
 ** Ideals
 ** Factor Groups
 ** Domains")
-				  (org-element-parse-buffer))))
+				  (org-element-parse-buffer)))
+			  (fn (lambda (hl) (= 2 (org-element-property :level hl)))))
 		    
 		    (it "should return headlines in order for non-linked index file"
-			(expect (yaow--get-file-ordering-from-index-tree tree2)
+			(expect (yaow--get-file-ordering-from-index-tree
+				 tree1 :headline-fun fn)
 				:to-equal
 				'("ideals.org" "factor-groups.org" "domains.org")))
 
 		    (it "should return headlines in order for linked index file"
-			(expect (yaow--get-file-ordering-from-index-tree tree1)
+			(expect (yaow--get-file-ordering-from-index-tree
+				 tree1 :headline-fun fn)
 				:to-equal
 				'("ideals.org" "factor-groups.org" "domains.org")))
 		    
