@@ -1,4 +1,4 @@
-;;; yaow.el --- Generate html pages from org files -*- lexical-binding: t -*-
+;;; ox-yaow.el --- Generate html pages from org files -*- lexical-binding: t -*-
 
 ;; Copyright (C) 2020 Laurence Warne
 
@@ -6,7 +6,7 @@
 ;; Maintainer: Laurence Warne
 ;; Version: 0.1
 ;; Keywords: org
-;; URL: https://github.com/LaurenceWarne/yaow.el
+;; URL: https://github.com/LaurenceWarne/ox-yaow.el
 ;; Package-Requires: ((emacs "26") (f "0.2.0") (s "1.12.0"))
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -35,20 +35,20 @@
 (require 'f)
 (require 'dash)
 
-(defgroup yaow nil
+(defgroup ox-yaow nil
   "A lightweight wiki export option."
   :group 'ox)
 
-(defcustom yaow-headlline-point-to-file-p
+(defcustom ox-yaow-headlline-point-to-file-p
   (lambda (hl) (= 2 (org-element-property :level hl)))
   "A function that returns true if some headline element points to an org file, else nil."
-  :group 'yaow
+  :group 'ox-yaow
   :type 'function)
 
 
-(defvar yaow-html-head "<link rel=\"stylesheet\" type=\"text/css\" href=\"https://fniessen.github.io/org-html-themes/styles/readtheorg/css/htmlize.css\"/><link rel=\"stylesheet\" type=\"text/css\" href=\"https://fniessen.github.io/org-html-themes/styles/readtheorg/css/readtheorg.css\"/><script src=\"https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js\"></script><script src=\"https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js\"></script><script type=\"text/javascript\" src=\"https://fniessen.github.io/org-html-themes/styles/lib/js/jquery.stickytableheaders.min.js\"></script><script type=\"text/javascript\" src=\"https://fniessen.github.io/org-html-themes/styles/readtheorg/js/readtheorg.js\"></script>")
+(defvar ox-yaow-html-head "<link rel=\"stylesheet\" type=\"text/css\" href=\"https://fniessen.github.io/org-html-themes/styles/readtheorg/css/htmlize.css\"/><link rel=\"stylesheet\" type=\"text/css\" href=\"https://fniessen.github.io/org-html-themes/styles/readtheorg/css/readtheorg.css\"/><script src=\"https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js\"></script><script src=\"https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js\"></script><script type=\"text/javascript\" src=\"https://fniessen.github.io/org-html-themes/styles/lib/js/jquery.stickytableheaders.min.js\"></script><script type=\"text/javascript\" src=\"https://fniessen.github.io/org-html-themes/styles/readtheorg/js/readtheorg.js\"></script>")
 
-(cl-defun yaow--get-file-ordering-from-index-tree (tree &key (headline-fun yaow-headlline-point-to-file-p))
+(cl-defun ox-yaow--get-file-ordering-from-index-tree (tree &key (headline-fun ox-yaow-headlline-point-to-file-p))
   "Get the ordering of files suggested by headlines collected from TREE."
   (let ((snd-level-headlines (org-element-map tree 'headline
 			       (lambda (hl)
@@ -61,18 +61,18 @@
 		   (org-element-property :raw-value it))
 		  snd-level-headlines))))
 
-(defun yaow--get-file-ordering-from-index (indexing-file-path)
+(defun ox-yaow--get-file-ordering-from-index (indexing-file-path)
   (with-temp-buffer
     (insert-file-contents indexing-file-path)
-    (yaow--get-file-ordering-from-index-tree (org-element-parse-buffer))))
+    (ox-yaow--get-file-ordering-from-index-tree (org-element-parse-buffer))))
 
-(defun yaow--get-html-relative-link (org-file link-text)
+(defun ox-yaow--get-html-relative-link (org-file link-text)
   "Return a HTML link element with text LINK-TEXT which points to a file with the same name as ORG-FILE, but with a .html extension (ie a relative link)."
   (let* ((base (f-no-ext org-file))
 	 (html-name (concat base ".html")))
     (concat "<a href='./" html-name "'>" link-text "</a>")))
 
-(cl-defun yaow--get-adjacent-files (base-file files &key (sort t))
+(cl-defun ox-yaow--get-adjacent-files (base-file files &key (sort t))
   "Return a cons cell whose car is the file from FILES preceding BASE-FILE, and whose cdr is the file from FILES succeeding BASE-FILE.  If order is t, then sort BASE-FILES first.  nil is used in place of files if such a file does not exist.  nil is returned if BASE-FILE is not in FILES."
   (let* ((sorted-files (if sort (sort files #'string-lessp) files))
 	 (position (cl-position base-file files :test #'string=)))
@@ -83,14 +83,14 @@
 	    ,(if (< nxt-idx (length files)) (nth nxt-idx sorted-files) nil)))
       nil)))
 
-(defun yaow-template (contents info)
+(defun ox-yaow-template (contents info)
   "Transcode CONTENTS into yaow html format.  INFO is a plist used as a communication channel."
   (let* ((filename (f-base (plist-get info :input-file)))
 	 (directory (f-dirname filename))
 	 (org-files-same-level
 	  (--map (f-base it) (f-files directory
 				      (lambda (file) (s-suffix? "org" file)))))
-	 (adj-files (yaow--get-adjacent-files filename org-files-same-level))
+	 (adj-files (ox-yaow--get-adjacent-files filename org-files-same-level))
 	 (base-html (org-html-template contents info)))
     (print org-files-same-level)
     (replace-regexp-in-string "<h1"
@@ -98,24 +98,24 @@
 				      "\">" (car adj-files) "</a><h1")
 			      base-html)))
 
-(defun yaow-org-export-to-html
+(defun ox-yaow-org-export-to-html
     (&optional async subtreep visible-only body-only ext-plist)
   "Org export menu entry for read-the-org."
   (let* ((extension ".html")
 	 (file (org-export-output-file-name extension subtreep))
 	 (org-export-coding-system 'utf-8))
-    (org-export-to-file 'yaow-html file
+    (org-export-to-file 'ox-yaow-html file
       async subtreep visible-only body-only ext-plist)))
 
-(org-export-define-derived-backend 'yaow-html 'html
-  :options-alist `((:html-head "HTML_HEAD" nil ,yaow-html-head newline))
+(org-export-define-derived-backend 'ox-yaow-html 'html
+  :options-alist `((:html-head "HTML_HEAD" nil ,ox-yaow-html-head newline))
   :menu-entry
   '(?h "Export to HTML"
-       ((?w "As yaow wiki file" yaow-org-export-to-html)))
+       ((?w "As yaow wiki file" ox-yaow-org-export-to-html)))
   :translate-alist
-  '((template . yaow-template)))
+  '((template . ox-yaow-template)))
 
 
-(provide 'yaow)
+(provide 'ox-yaow)
 
-;;; yaow.el ends here
+;;; ox-yaow.el ends here
