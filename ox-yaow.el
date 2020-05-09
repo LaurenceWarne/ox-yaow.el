@@ -72,16 +72,23 @@
 	 (html-name (concat base ".html")))
     (concat "<a href='./" html-name "'>" link-text "</a>")))
 
-(cl-defun ox-yaow--get-adjacent-files (base-file files &key (sort t))
-  "Return a plist with property :preceding-file as the file preceding FILE in BASE-FILES, and :succeeding-file as the file succeeding FILE in BASE-FILES.  nil is used in either case if no such file exists.  If order is t, then sort BASE-FILES first.  nil is used in place of files if such a file does not exist.  nil is returned if BASE-FILE is not in FILES."
-  (let* ((sorted-files (if sort (sort files #'string-lessp) files))
-	 (position (cl-position base-file files :test #'string=)))
+(cl-defun ox-yaow--get-adjacent-strings (target-string strings &key (sort t))
+  "Return a plist with property :preceding as the string preceding TARGET-STRING in STRINGS, and :succeeding as the string succeeding TARGET-STRING in STRINGS.  nil is used in either case if no such string exists.  If order is t, then sort STRINGS first.  nil is used in place of strings if such a string does not exist.  nil is returned if TARGET-STRING is not in STRINGS."
+  (let* ((sorted-strings (if sort (sort strings #'string-lessp) strings))
+	 (position (cl-position target-string strings :test #'string=)))
     (if position
 	(let ((prev-idx (1- position))
 	      (nxt-idx (1+ position)))
-	  `(:preceding-file  ,(if (>= prev-idx 0) (nth prev-idx sorted-files) nil)
-	    :succeeding-file ,(if (< nxt-idx (length files)) (nth nxt-idx sorted-files) nil)))
+	  `(:preceding  ,(if (>= prev-idx 0) (nth prev-idx sorted-strings) nil)
+	    :succeeding ,(if (< nxt-idx (length strings)) (nth nxt-idx sorted-strings) nil)))
       nil)))
+
+(defun ox-yaow--get-nav-links (prev-file next-file)
+  (concat
+   (when prev-file (concat "Previous: " (ox-yaow--get-html-relative-link
+					 prev-file prev-file)))
+   (when next-file (concat " Next: " (ox-yaow--get-html-relative-link
+					 next-file next-file)))))
 
 (defun ox-yaow-template (contents info)
   "Transcode CONTENTS into yaow html format.  INFO is a plist used as a communication channel."
@@ -90,11 +97,11 @@
 	 (org-files-same-level
 	  (--map (f-base it) (f-files directory
 				      (lambda (file) (s-suffix? "org" file)))))
-	 (adj-files (ox-yaow--get-adjacent-files filename org-files-same-level))
-	 (next-file (plist-get adj-files :succeeding-file))
-	 (prev-file (plist-get adj-files :preceding-file))
+	 (adj-files (ox-yaow--get-adjacent-strings filename org-files-same-level))
+	 (next-file (plist-get adj-files :succeeding))
+	 (prev-file (plist-get adj-files :preceding))
 	 (base-html (org-html-template contents info)))
-    (replace-regexp-in-string "<h1" (concat (ox-yaow--get-html-relative-link prev-file (concat "Prev: " prev-file))  "<h1") base-html)))
+    (replace-regexp-in-string "<h1" (concat (ox-yaow--get-nav-links prev-file next-file) "<h1") base-html)))
 
 (defun ox-yaow-org-export-to-html
     (&optional async subtreep visible-only body-only ext-plist)
