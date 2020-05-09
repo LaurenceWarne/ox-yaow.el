@@ -73,14 +73,14 @@
     (concat "<a href='./" html-name "'>" link-text "</a>")))
 
 (cl-defun ox-yaow--get-adjacent-files (base-file files &key (sort t))
-  "Return a cons cell whose car is the file from FILES preceding BASE-FILE, and whose cdr is the file from FILES succeeding BASE-FILE.  If order is t, then sort BASE-FILES first.  nil is used in place of files if such a file does not exist.  nil is returned if BASE-FILE is not in FILES."
+  "Return a plist with property :preceding-file as the file preceding FILE in BASE-FILES, and :succeeding-file as the file succeeding FILE in BASE-FILES.  nil is used in either case if no such file exists.  If order is t, then sort BASE-FILES first.  nil is used in place of files if such a file does not exist.  nil is returned if BASE-FILE is not in FILES."
   (let* ((sorted-files (if sort (sort files #'string-lessp) files))
 	 (position (cl-position base-file files :test #'string=)))
     (if position
 	(let ((prev-idx (1- position))
 	      (nxt-idx (1+ position)))
-	  `(,(if (>= prev-idx 0) (nth prev-idx sorted-files) nil) .
-	    ,(if (< nxt-idx (length files)) (nth nxt-idx sorted-files) nil)))
+	  `(:preceding-file  ,(if (>= prev-idx 0) (nth prev-idx sorted-files) nil)
+	    :succeeding-file ,(if (< nxt-idx (length files)) (nth nxt-idx sorted-files) nil)))
       nil)))
 
 (defun ox-yaow-template (contents info)
@@ -91,12 +91,10 @@
 	  (--map (f-base it) (f-files directory
 				      (lambda (file) (s-suffix? "org" file)))))
 	 (adj-files (ox-yaow--get-adjacent-files filename org-files-same-level))
+	 (next-file (plist-get adj-files :succeeding-file))
+	 (prev-file (plist-get adj-files :preceding-file))
 	 (base-html (org-html-template contents info)))
-    (print org-files-same-level)
-    (replace-regexp-in-string "<h1"
-			      (concat "<a href=\"./" (car adj-files) ".html"
-				      "\">" (car adj-files) "</a><h1")
-			      base-html)))
+    (replace-regexp-in-string "<h1" (concat (ox-yaow--get-html-relative-link prev-file (concat "Prev: " prev-file))  "<h1") base-html)))
 
 (defun ox-yaow-org-export-to-html
     (&optional async subtreep visible-only body-only ext-plist)

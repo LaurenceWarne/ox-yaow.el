@@ -18,22 +18,22 @@
 		    (it "should return correct adjacent files for middle file"
 			(expect (ox-yaow--get-adjacent-files "b.org" files-in-dir)
 				:to-equal
-				'("a.org" . "hi.org")))
+				'(:preceding-file "a.org" :succeeding-file "hi.org")))
 
 		    (it "should return sole adjacent file for beginning file"
 			(expect (ox-yaow--get-adjacent-files "a.org" files-in-dir)
 				:to-equal
-				'(nil . "b.org")))
+				'(:preceding-file nil :succeeding-file "b.org")))
 
 		    (it "should return sole adjacent file for end file"
 			(expect (ox-yaow--get-adjacent-files "z.org" files-in-dir)
 				:to-equal
-				'("hi.org" . nil)))
+				'(:preceding-file "hi.org" :succeeding-file nil)))
 
 		    (it "should return no adjacent files for one file in list"
 			(expect (ox-yaow--get-adjacent-files "z.org" '("z.org"))
 				:to-equal
-				'(nil . nil)))
+				'(:preceding-file nil :succeeding-file nil)))
 
 		    (it "should return correct adjacent files for no sort"
 			(let ((files-in-dir-no-sort
@@ -42,7 +42,14 @@
 							    files-in-dir-no-sort
 							    :sort nil)
 				  :to-equal
-				  '("z.org" . "hi.org")))))
+				  '(:preceding-file "z.org" :succeeding-file "hi.org"))))
+
+		    (it "should return nil when file no in file list"
+			(expect (ox-yaow--get-adjacent-files "not-in.org" files-in-dir)
+				:to-equal
+				nil))
+
+		    )
 
 	  (describe "ox-yaow--get-file-ordering-from-index-tree"
 		    :var ((tree1 (with-temp-buffer
