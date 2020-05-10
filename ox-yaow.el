@@ -41,10 +41,17 @@
 
 (defcustom ox-yaow-headlline-point-to-file-p
   (lambda (hl) (= 2 (org-element-property :level hl)))
-  "A function that returns true if some headline element points to an org file, else nil."
+  "A function that returns t if some headline element points to an org file, else nil."
   :group 'ox-yaow
   :type 'function)
 
+(defcustom ox-yaow-indexing-file-p
+  (lambda (file-path) (let ((base (f-base file-path)))
+			(or (string= base "index")
+			    (string= (cadr (reverse (f-split file-path))) base))))
+  "A function that returns t if the file should be treated as an indexing file, else nil."
+  :group 'ox-yaow
+  :type 'function)
 
 (defvar ox-yaow-html-head "<link rel=\"stylesheet\" type=\"text/css\" href=\"https://fniessen.github.io/org-html-themes/styles/readtheorg/css/htmlize.css\"/><link rel=\"stylesheet\" type=\"text/css\" href=\"https://fniessen.github.io/org-html-themes/styles/readtheorg/css/readtheorg.css\"/><script src=\"https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js\"></script><script src=\"https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js\"></script><script type=\"text/javascript\" src=\"https://fniessen.github.io/org-html-themes/styles/lib/js/jquery.stickytableheaders.min.js\"></script><script type=\"text/javascript\" src=\"https://fniessen.github.io/org-html-themes/styles/readtheorg/js/readtheorg.js\"></script>")
 
@@ -87,8 +94,16 @@
   (concat
    (when prev-file (concat "Previous: " (ox-yaow--get-html-relative-link
 					 prev-file prev-file)))
-   (when next-file (concat " Next: " (ox-yaow--get-html-relative-link
+   (when next-file (concat ", Next: " (ox-yaow--get-html-relative-link
 					 next-file next-file)))))
+
+(cl-defun ox-yaow--get-adjacent-files
+    (target-file file-list &key (indexing-file-p ox-yaow-indexing-file-p))
+  (let* ((indexing-file (car (-filter indexing-file-p file-list)))
+	 (file-list
+	  (if indexing-file (ox-yaow--get-file-ordering-from-index indexing-file)
+	    (sort file-list #'string-lessp))))
+    (ox-yaow--get-adjacent-strings target-file file-list :sort nil)))
 
 (defun ox-yaow-template (contents info)
   "Transcode CONTENTS into yaow html format.  INFO is a plist used as a communication channel."
@@ -97,7 +112,7 @@
 	 (org-files-same-level
 	  (--map (f-base it) (f-files directory
 				      (lambda (file) (s-suffix? "org" file)))))
-	 (adj-files (ox-yaow--get-adjacent-strings filename org-files-same-level))
+	 (adj-files (ox-yaow--get-adjacent-files filename org-files-same-level))
 	 (next-file (plist-get adj-files :succeeding))
 	 (prev-file (plist-get adj-files :preceding))
 	 (base-html (org-html-template contents info)))
