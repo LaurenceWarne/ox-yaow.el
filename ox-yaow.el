@@ -94,25 +94,27 @@
   (concat
    (when prev-file (concat "Previous: " (ox-yaow--get-html-relative-link
 					 prev-file prev-file)))
-   (when next-file (concat ", Next: " (ox-yaow--get-html-relative-link
+   (when (and prev-file next-file) ", ")
+   (when next-file (concat "Next: " (ox-yaow--get-html-relative-link
 					 next-file next-file)))))
 
 (cl-defun ox-yaow--get-adjacent-files
     (target-file file-list &key (indexing-file-p ox-yaow-indexing-file-p))
+  "Get files before and after TARGET-FILE in FILE-LIST.  These should all be full file paths.  INDEXING-FILE-P is a predicate determining whether a given file should be treated as an indexing file."
   (let* ((indexing-file (car (-filter indexing-file-p file-list)))
-	 (file-list
+	 (file-ordering
 	  (if indexing-file (ox-yaow--get-file-ordering-from-index indexing-file)
-	    (sort file-list #'string-lessp))))
-    (ox-yaow--get-adjacent-strings target-file file-list :sort nil)))
+	    file-list)))
+    (ox-yaow--get-adjacent-strings (f-base target-file)
+				   (--map (f-base it) file-ordering)
+				   :sort (unless indexing-file))))
 
 (defun ox-yaow-template (contents info)
   "Transcode CONTENTS into yaow html format.  INFO is a plist used as a communication channel."
   (let* ((filename (f-base (plist-get info :input-file)))
 	 (directory (f-dirname filename))
-	 (org-files-same-level
-	  (--map (f-base it) (f-files directory
-				      (lambda (file) (s-suffix? "org" file)))))
-	 (adj-files (ox-yaow--get-adjacent-files filename org-files-same-level))
+	 (org-paths-same-level (f-files directory (lambda (file) (s-suffix? "org" file))))
+	 (adj-files (ox-yaow--get-adjacent-files filename org-paths-same-level))
 	 (next-file (plist-get adj-files :succeeding))
 	 (prev-file (plist-get adj-files :preceding))
 	 (base-html (org-html-template contents info)))
