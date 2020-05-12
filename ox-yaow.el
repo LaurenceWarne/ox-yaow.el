@@ -7,7 +7,7 @@
 ;; Version: 0.1
 ;; Keywords: org
 ;; URL: https://github.com/LaurenceWarne/ox-yaow.el
-;; Package-Requires: ((emacs "26") (f "0.2.0") (s "1.12.0"))
+;; Package-Requires: ((emacs "26") (f "0.2.0") (s "1.12.0") (dash "2.17.0"))
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
