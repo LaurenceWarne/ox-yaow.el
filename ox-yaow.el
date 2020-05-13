@@ -130,7 +130,15 @@
 
 (defun ox-yaow-org-export-to-html
     (&optional async subtreep visible-only body-only ext-plist)
-  "Org export menu entry for read-the-org."
+  "Call org-export-to-file with the specified arguments.
+
+A non-nil optional argument ASYNC means the process should happen
+asynchronously.  The resulting buffer will then be accessible
+through the org-export-stack interface.
+
+Optional arguments SUBTREEP, VISIBLE-ONLY, BODY-ONLY and
+EXT-PLIST are similar to those used in org-export-as, which
+see."
   (let* ((extension ".html")
 	 (file (org-export-output-file-name extension subtreep))
 	 (org-export-coding-system 'utf-8))
@@ -138,6 +146,18 @@
       async subtreep visible-only body-only ext-plist)))
 
 (defun ox-yaow-publish-to-html (plist filename pub-dir)
+  "Publish an Org file to a the ox-yaow backend.
+
+BACKEND is a symbol representing the back-end used for
+transcoding.  FILENAME is the filename of the Org file to be
+published.  EXTENSION is the extension used for the output
+string, with the leading dot.  PLIST is the property list for the
+given project.
+
+Optional argument PUB-DIR, when non-nil is the publishing
+directory.
+
+Return output file name."
   (org-publish-org-to #'ox-yaow-html filename ".html" plist pub-dir))
 
 (provide 'ox-yaow)
