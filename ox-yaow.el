@@ -120,6 +120,14 @@
 	 (base-html (org-html-template contents info)))
     (replace-regexp-in-string "<h1" (concat (ox-yaow--get-nav-links prev-file next-file) "<h1") base-html)))
 
+(org-export-define-derived-backend 'ox-yaow-html 'html
+  :options-alist `((:html-head "HTML_HEAD" nil ,ox-yaow-html-head newline))
+  :menu-entry
+  '(?h "Export to HTML"
+       ((?w "As yaow wiki file" ox-yaow-org-export-to-html)))
+  :translate-alist
+  '((template . ox-yaow-template)))
+
 (defun ox-yaow-org-export-to-html
     (&optional async subtreep visible-only body-only ext-plist)
   "Org export menu entry for read-the-org."
@@ -129,14 +137,8 @@
     (org-export-to-file 'ox-yaow-html file
       async subtreep visible-only body-only ext-plist)))
 
-(org-export-define-derived-backend 'ox-yaow-html 'html
-  :options-alist `((:html-head "HTML_HEAD" nil ,ox-yaow-html-head newline))
-  :menu-entry
-  '(?h "Export to HTML"
-       ((?w "As yaow wiki file" ox-yaow-org-export-to-html)))
-  :translate-alist
-  '((template . ox-yaow-template)))
-
+(defun ox-yaow-publish-to-html (plist filename pub-dir)
+  (org-publish-org-to #'ox-yaow-html filename ".html" plist pub-dir))
 
 (provide 'ox-yaow)
 
