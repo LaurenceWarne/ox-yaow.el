@@ -53,6 +53,14 @@
   :group 'ox-yaow
   :type 'function)
 
+(defcustom ox-yaow-get-default-indexing-file
+  (lambda (file-path) (concat file-path
+			      (when (not (char-equal ?/ (elt (reverse file-path) 0))) "/")
+			      (f-base file-path) ".org"))
+  "A function which takes the file path of a directory (which is known to have no indexing file) as an argument and returns the path of an indexing file which should be created for this directory."
+  :group 'ox-yaow
+  :type 'function)
+
 (defvar ox-yaow-html-head "<link rel=\"stylesheet\" type=\"text/css\" href=\"https://fniessen.github.io/org-html-themes/styles/readtheorg/css/htmlize.css\"/><link rel=\"stylesheet\" type=\"text/css\" href=\"https://fniessen.github.io/org-html-themes/styles/readtheorg/css/readtheorg.css\"/><script src=\"https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js\"></script><script src=\"https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js\"></script><script type=\"text/javascript\" src=\"https://fniessen.github.io/org-html-themes/styles/lib/js/jquery.stickytableheaders.min.js\"></script><script type=\"text/javascript\" src=\"https://fniessen.github.io/org-html-themes/styles/readtheorg/js/readtheorg.js\"></script>")
 
 (cl-defun ox-yaow--get-file-ordering-from-index-tree (tree &key (headline-fun ox-yaow-headlline-point-to-file-p))
@@ -91,12 +99,23 @@
       nil)))
 
 (defun ox-yaow--get-nav-links (prev-file next-file)
+  "Return a html string consisting of links to PREV-FILE and NEXT-FILE.  If one is nil it is ignored."
   (concat
    (when prev-file (concat "Previous: " (ox-yaow--get-html-relative-link
 					 prev-file prev-file)))
    (when (and prev-file next-file) ", ")
    (when next-file (concat "Next: " (ox-yaow--get-html-relative-link
 					 next-file next-file)))))
+
+(cl-defun ox-yaow--get-up-file
+    (target-file-path &key (indexing-file-p ox-yaow-indexing-file-p)
+		      (get-default-indexing-file ox-yaow-get-default-indexing-file))
+  "If TARGET-FILE-PATH points to an indexing file (determined by INDEXING-FILE-P), return the path to the indexing file in the parent directory of TARGET-FILE-PATH (or return the result of GET-DEFAULT-INDEXING-FILE if no such file exists).  Else return the file path of the indexing file in the same directory as TARGET-FILE-PATH."
+  (let* ((directory (if (funcall indexing-file-p target-file-path)
+		       (f-parent (f-parent target-file-path))
+		     (f-parent target-file-path)))
+	 (indexing-file (car (-filter indexing-file-p (f-files directory)))))
+    (if indexing-file indexing-file (funcall get-default-indexing-file directory))))
 
 (cl-defun ox-yaow--get-adjacent-files
     (target-file file-list &key (indexing-file-p ox-yaow-indexing-file-p))
@@ -119,6 +138,8 @@
 	 (prev-file (plist-get adj-files :preceding))
 	 (base-html (org-html-template contents info)))
     (replace-regexp-in-string "<h1" (concat (ox-yaow--get-nav-links prev-file next-file) "<h1") base-html)))
+
+;; Export options
 
 (org-export-define-derived-backend 'ox-yaow-html 'html
   :options-alist `((:html-head "HTML_HEAD" nil ,ox-yaow-html-head newline))
