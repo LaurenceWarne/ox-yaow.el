@@ -63,10 +63,11 @@
 
 (defcustom ox-yaow-html-link-stitching-fn
   (lambda (orig-file prev-file next-file up-file)
-    (let ((attributes (when (or prev-file next-file)) "style='float: right;'"))
+    (let ((attributes (when (or prev-file next-file) "style='float: right;'")))
       (concat (ox-yaow--get-nav-links prev-file next-file)
-	      (when up-file (concat "<span " (when attributes attributes) ">"))
-	      (ox-yaow--get-html-relative-link up-file orig-file)
+	      (when up-file (concat "<span " (when attributes attributes) ">Up: "))
+	      (ox-yaow--get-html-relative-link up-file (f-base up-file)
+					       :reference-path orig-file)
 	      (when up-file "</span>")
 	      "<hr>")))
   "A function that takes prev-file, next-file and up-file as arguments (any of which may be nil) and returns valid html corresponding to linking to these files."
@@ -145,23 +146,20 @@
 
 (defun ox-yaow-template (contents info)
   "Transcode CONTENTS into yaow html format.  INFO is a plist used as a communication channel."
-  (let* ((filename (f-base (plist-get info :input-file)))
+  (let* ((file-path (plist-get info :input-file))
+	 (filename (f-base file-path))
 	 (directory (f-dirname filename))
 	 (org-paths-same-level (f-files directory (lambda (file) (s-suffix? "org" file))))
 	 (adj-files (ox-yaow--get-adjacent-files filename org-paths-same-level))
 	 (next-file (plist-get adj-files :succeeding))
 	 (prev-file (plist-get adj-files :preceding))
-	 (up-file (ox-yaow--get-up-file (plist-get info :input-file)))
+	 (up-file (ox-yaow--get-up-file file-path))
 	 (base-html (org-html-template contents info)))
     (print up-file)
-    (replace-regexp-in-string "<h1"
-			      (concat (ox-yaow--get-nav-links prev-file next-file)
-				      (when (and up-file (or prev-file next-file))
-					", Up: ")
-				      (ox-yaow--get-html-relative-link
-				       up-file (f-base up-file))
-				      "<hr>"
-				      "<h1")
+    (replace-regexp-in-string "<h1" (concat (funcall ox-yaow-html-link-stitching-fn
+						     file-path
+						     prev-file next-file up-file)
+					    "<h1")
 			      base-html)))
 
 ;; Export options
