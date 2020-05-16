@@ -61,6 +61,18 @@
   :group 'ox-yaow
   :type 'function)
 
+(defcustom ox-yaow-html-link-stitching-fn
+  (lambda (orig-file prev-file next-file up-file)
+    (let ((attributes (when (or prev-file next-file)) "style='float: right;'"))
+      (concat (ox-yaow--get-nav-links prev-file next-file)
+	      (when up-file (concat "<span " (when attributes attributes) ">"))
+	      (ox-yaow--get-html-relative-link up-file orig-file)
+	      (when up-file "</span>")
+	      "<hr>")))
+  "A function that takes prev-file, next-file and up-file as arguments (any of which may be nil) and returns valid html corresponding to linking to these files."
+  :group 'ox-yaow
+  :type 'function)
+
 (defvar ox-yaow-html-head "<link rel=\"stylesheet\" type=\"text/css\" href=\"https://fniessen.github.io/org-html-themes/styles/readtheorg/css/htmlize.css\"/><link rel=\"stylesheet\" type=\"text/css\" href=\"https://fniessen.github.io/org-html-themes/styles/readtheorg/css/readtheorg.css\"/><script src=\"https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js\"></script><script src=\"https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js\"></script><script type=\"text/javascript\" src=\"https://fniessen.github.io/org-html-themes/styles/lib/js/jquery.stickytableheaders.min.js\"></script><script type=\"text/javascript\" src=\"https://fniessen.github.io/org-html-themes/styles/readtheorg/js/readtheorg.js\"></script>")
 
 (cl-defun ox-yaow--get-file-ordering-from-index-tree (tree &key (headline-fun ox-yaow-headlline-point-to-file-p))
@@ -82,13 +94,13 @@
     (ox-yaow--get-file-ordering-from-index-tree (org-element-parse-buffer))))
 
 (cl-defun ox-yaow--get-html-relative-link
-    (file-path link-text &key (reference-path file-path))
+    (file-path link-text &key (reference-path file-path) attributes)
   "Return a HTML link element with text LINK-TEXT and href attribute equal to the path of FILE-PATH relative to REFERENCE-PATH, but with a .html extension."
   (let* ((relative-path (f-relative file-path (f-dirname reference-path)))
 	 (html-path (concat (f-no-ext relative-path) ".html")))
     (concat "<a href='"
 	    (when (not (char-equal ?. (elt html-path 0))) "./")
-	    html-path "'>" link-text "</a>")))
+	    html-path "' " attributes ">" link-text "</a>")))
 
 (cl-defun ox-yaow--get-adjacent-strings (target-string strings &key (sort t))
   "Return a plist with property :preceding as the string preceding TARGET-STRING in STRINGS, and :succeeding as the string succeeding TARGET-STRING in STRINGS.  nil is used in either case if no such string exists.  If order is t, then sort STRINGS first.  nil is used in place of strings if such a string does not exist.  nil is returned if TARGET-STRING is not in STRINGS."
@@ -130,11 +142,6 @@
     (ox-yaow--get-adjacent-strings (f-base target-file)
 				   (--map (f-base it) file-ordering)
 				   :sort (unless indexing-file))))
-
-(defun ox-yaow--get-up-file-link (up-file)
-  "Return string html link to UP-FILE, or nil if UP-FILE is nil."
-  (when up-file (concat ))
-  )
 
 (defun ox-yaow-template (contents info)
   "Transcode CONTENTS into yaow html format.  INFO is a plist used as a communication channel."
