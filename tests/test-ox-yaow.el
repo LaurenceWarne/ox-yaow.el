@@ -80,4 +80,16 @@
 				:to-equal
 				'("ideals.org" "factor-groups.org" "domains.org")))
 		    
-		    ))
+		    )
+
+	  (describe "ox-yaow-get-default-indexing-file"
+
+		    (it "should return correct indexing file with string ending with slash"
+			(expect (funcall ox-yaow-get-default-indexing-file "/my/dir/")
+				:to-equal
+				"/my/dir/dir.org"))
+
+		    (it "should return correct indexing file with string ending without slash"
+			(expect (funcall ox-yaow-get-default-indexing-file "/my/dir/")
+				:to-equal
+				"/my/dir/dir.org"))))
