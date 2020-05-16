@@ -131,6 +131,11 @@
 				   (--map (f-base it) file-ordering)
 				   :sort (unless indexing-file))))
 
+(defun ox-yaow--get-up-file-link (up-file)
+  "Return string html link to UP-FILE, or nil if UP-FILE is nil."
+  (when up-file (concat ))
+  )
+
 (defun ox-yaow-template (contents info)
   "Transcode CONTENTS into yaow html format.  INFO is a plist used as a communication channel."
   (let* ((filename (f-base (plist-get info :input-file)))
@@ -144,7 +149,11 @@
     (print up-file)
     (replace-regexp-in-string "<h1"
 			      (concat (ox-yaow--get-nav-links prev-file next-file)
-				      (ox-yaow--get-html-relative-link up-file "up")
+				      (when (and up-file (or prev-file next-file))
+					", Up: ")
+				      (ox-yaow--get-html-relative-link
+				       up-file (f-base up-file))
+				      "<hr>"
 				      "<h1")
 			      base-html)))
 
