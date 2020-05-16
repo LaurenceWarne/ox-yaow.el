@@ -92,4 +92,39 @@
 		    (it "should return correct indexing file with string ending without slash"
 			(expect (funcall ox-yaow-get-default-indexing-file "/my/dir/")
 				:to-equal
-				"/my/dir/dir.org"))))
+				"/my/dir/dir.org")))
+
+	  (describe "ox-yaow--get-html-relative-link"
+
+		    (it "should return correct relative link for file same directory"
+			(expect (ox-yaow--get-html-relative-link
+				 "/home/maths/maths.org"
+				 "text"
+				 :reference-path "/home/maths/number.org")
+				:to-equal
+				"<a href='./maths.html'>text</a>"))
+
+		    (it "should return correct relative link for file outer directory"
+			(expect (ox-yaow--get-html-relative-link
+				 "/home/base.org"
+				 "text"
+				 :reference-path "/home/maths/number.org")
+				:to-equal
+				"<a href='../base.html'>text</a>"))
+
+		    (it "should return correct relative link for file inner directory"
+			(expect (ox-yaow--get-html-relative-link
+				 "/home/maths/algebra/sub.org"
+				 "text"
+				 :reference-path "/home/maths/number.org")
+				:to-equal
+				"<a href='./algebra/sub.html'>text</a>"))
+		    )
+
+		    (it "should return correct relative link for no ref file"
+			(expect (ox-yaow--get-html-relative-link
+				 "/home/maths/algebra/sub.org"
+				 "text")
+				:to-equal
+				"<a href='./sub.html'>text</a>"))
+		    )

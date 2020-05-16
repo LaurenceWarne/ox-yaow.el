@@ -81,11 +81,14 @@
     (insert-file-contents indexing-file-path)
     (ox-yaow--get-file-ordering-from-index-tree (org-element-parse-buffer))))
 
-(defun ox-yaow--get-html-relative-link (org-file link-text)
-  "Return a HTML link element with text LINK-TEXT which points to a file with the same name as ORG-FILE, but with a .html extension (ie a relative link)."
-  (let* ((base (f-no-ext org-file))
-	 (html-name (concat base ".html")))
-    (concat "<a href='./" html-name "'>" link-text "</a>")))
+(cl-defun ox-yaow--get-html-relative-link
+    (file-path link-text &key (reference-path file-path))
+  "Return a HTML link element with text LINK-TEXT and href attribute equal to the path of FILE-PATH relative to REFERENCE-PATH, but with a .html extension."
+  (let* ((relative-path (f-relative file-path (f-dirname reference-path)))
+	 (html-path (concat (f-no-ext relative-path) ".html")))
+    (concat "<a href='"
+	    (when (not (char-equal ?. (elt html-path 0))) "./")
+	    html-path "'>" link-text "</a>")))
 
 (cl-defun ox-yaow--get-adjacent-strings (target-string strings &key (sort t))
   "Return a plist with property :preceding as the string preceding TARGET-STRING in STRINGS, and :succeeding as the string succeeding TARGET-STRING in STRINGS.  nil is used in either case if no such string exists.  If order is t, then sort STRINGS first.  nil is used in place of strings if such a string does not exist.  nil is returned if TARGET-STRING is not in STRINGS."
@@ -136,8 +139,14 @@
 	 (adj-files (ox-yaow--get-adjacent-files filename org-paths-same-level))
 	 (next-file (plist-get adj-files :succeeding))
 	 (prev-file (plist-get adj-files :preceding))
+	 (up-file (ox-yaow--get-up-file (plist-get info :input-file)))
 	 (base-html (org-html-template contents info)))
-    (replace-regexp-in-string "<h1" (concat (ox-yaow--get-nav-links prev-file next-file) "<h1") base-html)))
+    (print up-file)
+    (replace-regexp-in-string "<h1"
+			      (concat (ox-yaow--get-nav-links prev-file next-file)
+				      (ox-yaow--get-html-relative-link up-file "up")
+				      "<h1")
+			      base-html)))
 
 ;; Export options
 
