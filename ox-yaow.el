@@ -76,6 +76,8 @@
 
 (defvar ox-yaow-html-head "<link rel=\"stylesheet\" type=\"text/css\" href=\"https://fniessen.github.io/org-html-themes/styles/readtheorg/css/htmlize.css\"/><link rel=\"stylesheet\" type=\"text/css\" href=\"https://fniessen.github.io/org-html-themes/styles/readtheorg/css/readtheorg.css\"/><script src=\"https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js\"></script><script src=\"https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js\"></script><script type=\"text/javascript\" src=\"https://fniessen.github.io/org-html-themes/styles/lib/js/jquery.stickytableheaders.min.js\"></script><script type=\"text/javascript\" src=\"https://fniessen.github.io/org-html-themes/styles/readtheorg/js/readtheorg.js\"></script>")
 
+(defvar ox-yaow--generated-files nil)
+
 (cl-defun ox-yaow--get-file-ordering-from-index-tree (tree &key (headline-fun ox-yaow-headlline-point-to-file-p))
   "Get the ordering of files suggested by headlines collected from TREE."
   (let ((snd-level-headlines (org-element-map tree 'headline
@@ -181,15 +183,20 @@
     (when (not indexing-file)
       ;; Create file
       (let* ((local-dirs (f-directories directory-path))
-	     (usable-dirs (--filter #'f-empty-p local-dirs))
+	     (usable-dirs (--filter (lambda (dir)
+				      (--any? (s-ends-with-p ".org" it)
+					      (f-files dir nil t))) local-dirs))
 	     (lower-level-indices (--map (funcall ox-yaow-get-default-indexing-file it)
-					 usable-dirs)))
+					 usable-dirs))
+	     (indexing-file-name
+	      (funcall ox-yaow-get-default-indexing-file directory-path)))
 	(with-temp-buffer
 	  (insert (ox-yaow--get-index-file-str
 		   (funcall ox-yaow-get-default-indexing-file directory-path)
 		   (append files lower-level-indices)))
-	  (write-region (point-min) (point-max)
-			(funcall ox-yaow-get-default-indexing-file directory-path)))))))
+	  (write-region (point-min) (point-max) indexing-file-name)
+	  (setq ox-yaow--generated-files (cons indexing-file-name
+					       ox-yaow--generated-files)))))))
 
 (defun ox-yaow-preparation-fn (project-alist)
   "Create temporary indexing files for the project described in PROJECT-ALIST."
@@ -200,6 +207,14 @@
 					     (f-files dir nil t))) t)
 	     do
 	     (ox-yaow--prep-directory directory))))
+
+(defun ox-yaow-completion-fn (project-alist)
+  "Remove temporary indexing files for the project described in PROJECT-ALIST."
+  (cl-loop for generated-file in ox-yaow--generated-files do
+	   (f-delete generated-file)
+	   (message (concat "Deleted generated file: " generated-file)))
+  (setq ox-yaow--generated-files nil))
+
 
 ;; Export options
 
