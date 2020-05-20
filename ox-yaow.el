@@ -95,13 +95,13 @@
     (ox-yaow--get-file-ordering-from-index-tree (org-element-parse-buffer))))
 
 (cl-defun ox-yaow--get-html-relative-link
-    (file-path link-text &key (reference-path file-path) attributes)
+    (file-path link-text &key (reference-path file-path))
   "Return a HTML link element with text LINK-TEXT and href attribute equal to the path of FILE-PATH relative to REFERENCE-PATH, but with a .html extension."
   (let* ((relative-path (f-relative file-path (f-dirname reference-path)))
 	 (html-path (concat (f-no-ext relative-path) ".html")))
     (concat "<a href='"
 	    (when (not (char-equal ?. (elt html-path 0))) "./")
-	    html-path "' " attributes ">" link-text "</a>")))
+	    html-path "'>" link-text "</a>")))
 
 (cl-defun ox-yaow--get-adjacent-strings (target-string strings &key (sort t))
   "Return a plist with property :preceding as the string preceding TARGET-STRING in STRINGS, and :succeeding as the string succeeding TARGET-STRING in STRINGS.  nil is used in either case if no such string exists.  If order is t, then sort STRINGS first.  nil is used in place of strings if such a string does not exist.  nil is returned if TARGET-STRING is not in STRINGS."
@@ -167,7 +167,7 @@
 	 (mapconcat
 	  (lambda (path)
 	    (format "** [[./%s][%s]]\n"
-		    (f-relative path (f-dirname file-path))
+		    (f-swap-ext (f-relative path (f-dirname file-path)) "html")
 		    (capitalize (s-replace "-" " " (f-base path)))))
 	  file-path-list "")))
     (concat "* " (capitalize (s-replace "-" " " (f-base file-path)))

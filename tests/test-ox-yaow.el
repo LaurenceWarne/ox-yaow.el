@@ -119,12 +119,26 @@
 				 :reference-path "/home/maths/number.org")
 				:to-equal
 				"<a href='./algebra/sub.html'>text</a>"))
-		    )
-
+		    
 		    (it "should return correct relative link for no ref file"
 			(expect (ox-yaow--get-html-relative-link
 				 "/home/maths/algebra/sub.org"
 				 "text")
 				:to-equal
-				"<a href='./sub.html'>text</a>"))
-		    )
+				"<a href='./sub.html'>text</a>")))
+
+	  (describe "ox-yaow--get-index-file-str"
+
+		    (it "should return correct string for files"
+			(expect (ox-yaow--get-index-file-str
+				 "/home/maths/maths.org"
+				 '("/home/maths/questions.org"
+				   "/home/maths/number/numbers.org"
+				   "/home/maths/other-thing.org"))
+				:to-equal
+				"* Maths
+** [[./questions.html][Questions]]
+** [[./number/numbers.html][Numbers]]
+** [[./other-thing.html][Other Thing]]
+"
+))))
