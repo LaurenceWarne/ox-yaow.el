@@ -162,6 +162,37 @@
 					    "<h1")
 			      base-html)))
 
+(defun ox-yaow--create-index-file-str (file-path file-path-list)
+  (let ((snd-level-headings
+	 (mapconcat
+	  (lambda (path)
+	    (format "** [[./%s][%s]]\n"
+		    (f-relative path (f-dirname file-path))
+		    (capitalize (s-replace "-" " " (f-base path)))))
+	  file-path-list "")))
+    (concat "* " (capitalize (s-replace "-" " " (f-base file-path)))
+	    "\n" snd-level-headings)))
+
+(defun ox-yaow--prep-directory (directory)
+  (let* ((files (f-files directory))
+	 (indexing-file (car (-filter indexing-file-p files))))
+    (when (not indexing-file)
+      ;; Create file
+      (let ((local-dirs (f-directories directory))
+	    (usable-dirs (-filter f-empty-p local-dirs))
+	    (lower-level-indices (-map (funcall ox-yaow-get-default-indexing-file it)
+				       usable-dirs)))
+	(with-temp-buffer
+	  (insert (ox-yaow--get-index-file-str path (append files lower-level-indices)))
+	  (write-region (point-min) (point-max) path))))))
+
+(defun ox-yaow-preparation-fn (project-alist)
+  "docstring"
+  (let ((src-dir (plist-get project-alist :base-directory)))
+    (cl-loop for directory in (f-directories src-dir nil t) do
+	     (print directory)))
+  )
+
 ;; Export options
 
 (org-export-define-derived-backend 'ox-yaow-html 'html
