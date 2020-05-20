@@ -162,7 +162,7 @@
 					    "<h1")
 			      base-html)))
 
-(defun ox-yaow--create-index-file-str (file-path file-path-list)
+(defun ox-yaow--get-index-file-str (file-path file-path-list)
   (let ((snd-level-headings
 	 (mapconcat
 	  (lambda (path)
@@ -173,25 +173,33 @@
     (concat "* " (capitalize (s-replace "-" " " (f-base file-path)))
 	    "\n" snd-level-headings)))
 
-(defun ox-yaow--prep-directory (directory)
-  (let* ((files (f-files directory))
+(cl-defun ox-yaow--prep-directory (directory-path
+				   &key (indexing-file-p ox-yaow-indexing-file-p))
+  "Check if the (full) path described by DIRECTORY-PATH has an indexing file, if it does not, create one."
+  (let* ((files (f-files directory-path (lambda (f) (s-ends-with-p ".org" f))))
 	 (indexing-file (car (-filter indexing-file-p files))))
     (when (not indexing-file)
       ;; Create file
-      (let ((local-dirs (f-directories directory))
-	    (usable-dirs (-filter f-empty-p local-dirs))
-	    (lower-level-indices (-map (funcall ox-yaow-get-default-indexing-file it)
-				       usable-dirs)))
+      (let* ((local-dirs (f-directories directory-path))
+	     (usable-dirs (--filter #'f-empty-p local-dirs))
+	     (lower-level-indices (--map (funcall ox-yaow-get-default-indexing-file it)
+					 usable-dirs)))
 	(with-temp-buffer
-	  (insert (ox-yaow--get-index-file-str path (append files lower-level-indices)))
-	  (write-region (point-min) (point-max) path))))))
+	  (insert (ox-yaow--get-index-file-str
+		   (funcall ox-yaow-get-default-indexing-file directory-path)
+		   (append files lower-level-indices)))
+	  (write-region (point-min) (point-max)
+			(funcall ox-yaow-get-default-indexing-file directory-path)))))))
 
 (defun ox-yaow-preparation-fn (project-alist)
-  "docstring"
+  "Create temporary indexing files for the project described in PROJECT-ALIST."
   (let ((src-dir (plist-get project-alist :base-directory)))
-    (cl-loop for directory in (f-directories src-dir nil t) do
-	     (print directory)))
-  )
+    (cl-loop for directory in
+	     (f-directories src-dir (lambda (dir)
+				      (--any? (s-ends-with-p ".org" it)
+					     (f-files dir nil t))) t)
+	     do
+	     (ox-yaow--prep-directory directory))))
 
 ;; Export options
 
