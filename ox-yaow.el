@@ -171,9 +171,9 @@
 	    (format "** [[./%s][%s]]\n"
 		    (f-swap-ext (f-relative path (f-dirname file-path)) "html")
 		    (capitalize (s-replace "-" " " (f-base path)))))
-	  file-path-list "")))
-    (concat "* " (capitalize (s-replace "-" " " (f-base file-path)))
-	    "\n" snd-level-headings)))
+	  file-path-list ""))
+	(title (capitalize (s-replace "-" " " (f-base file-path)))))
+    (concat "#+TITLE: " title "\n* " title "\n" snd-level-headings)))
 
 (cl-defun ox-yaow--prep-directory (directory-path
 				   &key (indexing-file-p ox-yaow-indexing-file-p))
@@ -183,9 +183,9 @@
     (when (not indexing-file)
       ;; Create file
       (let* ((local-dirs (f-directories directory-path))
-	     (usable-dirs (--filter (lambda (dir)
-				      (--any? (s-ends-with-p ".org" it)
-					      (f-files dir nil t))) local-dirs))
+	     (usable-dirs (-filter (lambda (dir)
+				     (--any? (s-ends-with-p ".org" it)
+					     (f-files dir nil t))) local-dirs))
 	     (lower-level-indices (--map (funcall ox-yaow-get-default-indexing-file it)
 					 usable-dirs))
 	     (indexing-file-name

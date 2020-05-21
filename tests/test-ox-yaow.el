@@ -136,7 +136,8 @@
 				   "/home/maths/number/numbers.org"
 				   "/home/maths/other-thing.org"))
 				:to-equal
-				"* Maths
+				"#+TITLE: Maths
+* Maths
 ** [[./questions.html][Questions]]
 ** [[./number/numbers.html][Numbers]]
 ** [[./other-thing.html][Other Thing]]
