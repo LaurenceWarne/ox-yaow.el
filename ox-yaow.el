@@ -66,11 +66,13 @@
     (let ((attributes (when (or prev-file next-file) "style='float: right;'")))
       (concat (ox-yaow--get-nav-links prev-file next-file)
 	      (when up-file (concat "<span " (when attributes attributes) ">Up: "))
-	      (ox-yaow--get-html-relative-link up-file (f-base up-file)
-					       :reference-path orig-file)
+	      (ox-yaow--get-html-relative-link
+	       up-file
+	       (capitalize (s-replace "-" " " (f-base up-file)))
+	       :reference-path orig-file)
 	      (when up-file "</span>")
 	      "<hr>")))
-  "A function that takes prev-file, next-file and up-file as arguments (any of which may be nil) and returns valid html corresponding to linking to these files."
+  "A function that takes the strings denoting file paths: prev-file, next-file and up-file as arguments (any of which may be nil) and returns valid html corresponding to linking to these files."
   :group 'ox-yaow
   :type 'function)
 
@@ -121,10 +123,12 @@
   "Return a html string consisting of links to PREV-FILE and NEXT-FILE.  If one is nil it is ignored."
   (concat
    (when prev-file (concat "Previous: " (ox-yaow--get-html-relative-link
-					 prev-file prev-file)))
+					 prev-file
+					 (capitalize (s-replace "-" " " (f-base prev-file))))))
    (when (and prev-file next-file) ", ")
    (when next-file (concat "Next: " (ox-yaow--get-html-relative-link
-					 next-file next-file)))))
+				     next-file
+				     (capitalize (s-replace "-" " " (f-base next-file))))))))
 
 (cl-defun ox-yaow--get-up-file
     (target-file-path &key (indexing-file-p ox-yaow-indexing-file-p)
@@ -140,11 +144,16 @@
     (target-file file-list &key (indexing-file-p ox-yaow-indexing-file-p))
   "Get files before and after TARGET-FILE in FILE-LIST.  These should all be full file paths.  INDEXING-FILE-P is a predicate determining whether a given file should be treated as an indexing file."
   (let* ((indexing-file (car (-filter indexing-file-p file-list)))
+	 (base-files (--map (f-base it) file-list))
 	 (file-ordering
-	  (if indexing-file (ox-yaow--get-file-ordering-from-index indexing-file)
-	    file-list)))
+	  (if indexing-file
+	      ;; Ensure links found in indexing file point to files in same dir
+	      (--filter (member (f-base it) base-files)
+			(--map (f-base it)
+			       (ox-yaow--get-file-ordering-from-index indexing-file)))
+	    base-files)))
     (ox-yaow--get-adjacent-strings (f-base target-file)
-				   (--map (f-base it) file-ordering)
+				   file-ordering
 				   :sort (unless indexing-file))))
 
 (defun ox-yaow-template (contents info)
