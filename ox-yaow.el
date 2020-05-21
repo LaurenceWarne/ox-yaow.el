@@ -92,6 +92,7 @@
 		  snd-level-headlines))))
 
 (defun ox-yaow--get-file-ordering-from-index (indexing-file-path)
+  "Get the ordering of files in described by the file pointed to by INDEXING-FILE-PATH."
   (with-temp-buffer
     (insert-file-contents indexing-file-path)
     (ox-yaow--get-file-ordering-from-index-tree (org-element-parse-buffer))))
@@ -165,6 +166,7 @@
 			      base-html)))
 
 (defun ox-yaow--get-index-file-str (file-path file-path-list)
+  "Return the contents of the indexing file FILE-PATH as a string, containing links to files in FILE-PATH-LIST."
   (let ((snd-level-headings
 	 (mapconcat
 	  (lambda (path)
@@ -175,11 +177,10 @@
 	(title (capitalize (s-replace "-" " " (f-base file-path)))))
     (concat "#+TITLE: " title "\n* " title "\n" snd-level-headings)))
 
-(cl-defun ox-yaow--prep-directory (directory-path
-				   &key (indexing-file-p ox-yaow-indexing-file-p))
+(defun ox-yaow--prep-directory (directory-path)
   "Check if the (full) path described by DIRECTORY-PATH has an indexing file, if it does not, create one."
   (let* ((files (f-files directory-path (lambda (f) (s-ends-with-p ".org" f))))
-	 (indexing-file (car (-filter indexing-file-p files))))
+	 (indexing-file (car (-filter ox-yaow-indexing-file-p files))))
     (when (not indexing-file)
       ;; Create file
       (let* ((local-dirs (f-directories directory-path))
