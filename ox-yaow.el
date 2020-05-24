@@ -46,23 +46,41 @@
   :type 'function)
 
 (defcustom ox-yaow-indexing-file-p
-  (lambda (file-path) (let ((base (f-base file-path)))
-			(or (string= base "index")
-			    (string= (cadr (reverse (f-split file-path))) base))))
+  #'ox-yaow--indexing-file-p
   "A function that returns t if the file should be treated as an indexing file, else nil."
   :group 'ox-yaow
   :type 'function)
 
 (defcustom ox-yaow-get-default-indexing-file
-  (lambda (file-path) (concat file-path
-			      (when (not (char-equal ?/ (elt (reverse file-path) 0))) "/")
-			      (f-base file-path) ".org"))
+  #'ox-yaow--get-default-indexing-file
   "A function which takes the file path of a directory (which is known to have no indexing file) as an argument and returns the path of an indexing file which should be created for this directory."
   :group 'ox-yaow
   :type 'function)
 
 (defcustom ox-yaow-html-link-stitching-fn
-  (lambda (orig-file prev-file next-file up-file)
+  #'ox-yaow--html-link-stitching-fn
+  "A function that takes the strings denoting file paths: prev-file, next-file and up-file as arguments (any of which may be nil) and returns valid html corresponding to linking to these files."
+  :group 'ox-yaow
+  :type 'function)
+
+(defvar ox-yaow-html-head "<link rel=\"stylesheet\" type=\"text/css\" href=\"https://fniessen.github.io/org-html-themes/styles/readtheorg/css/htmlize.css\"/><link rel=\"stylesheet\" type=\"text/css\" href=\"https://fniessen.github.io/org-html-themes/styles/readtheorg/css/readtheorg.css\"/><script src=\"https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js\"></script><script src=\"https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js\"></script><script type=\"text/javascript\" src=\"https://fniessen.github.io/org-html-themes/styles/lib/js/jquery.stickytableheaders.min.js\"></script><script type=\"text/javascript\" src=\"https://fniessen.github.io/org-html-themes/styles/readtheorg/js/readtheorg.js\"></script>")
+
+(defvar ox-yaow--generated-files nil)
+
+(defun ox-yaow--indexing-file-p (file-path)
+  "Return t if the filename of FILE-PATH is 'index' or if the filename is equal to the directory name, else return nil."
+  (let ((base (f-base file-path)))
+    (or (string= base "index")
+	(string= (cadr (reverse (f-split file-path))) base))))
+
+(defun ox-yaow--get-default-indexing-file (path)
+  "Return PATH (a directory path) concatenated with 'filename.org' where filename is the name of the directory pointed to by PATH."
+  (concat path
+	  (when (not (char-equal ?/ (elt (reverse path) 0))) "/")
+	  (f-base path) ".org"))
+
+(defun ox-yaow--html-link-stitching-fn (orig-file prev-file next-file up-file)
+  "Return html with links to PREV-FILE, NEXT-FILE and UP-FILE if they are non-nil, where the links are relative to ORIG-FILE."
     (let ((attributes (when (or prev-file next-file) "style='float: right;'")))
       (concat (ox-yaow--get-nav-links prev-file next-file)
 	      (when up-file (concat "<span " (when attributes attributes) ">Up: "))
@@ -72,13 +90,6 @@
 	       :reference-path orig-file)
 	      (when up-file "</span>")
 	      "<hr>")))
-  "A function that takes the strings denoting file paths: prev-file, next-file and up-file as arguments (any of which may be nil) and returns valid html corresponding to linking to these files."
-  :group 'ox-yaow
-  :type 'function)
-
-(defvar ox-yaow-html-head "<link rel=\"stylesheet\" type=\"text/css\" href=\"https://fniessen.github.io/org-html-themes/styles/readtheorg/css/htmlize.css\"/><link rel=\"stylesheet\" type=\"text/css\" href=\"https://fniessen.github.io/org-html-themes/styles/readtheorg/css/readtheorg.css\"/><script src=\"https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js\"></script><script src=\"https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js\"></script><script type=\"text/javascript\" src=\"https://fniessen.github.io/org-html-themes/styles/lib/js/jquery.stickytableheaders.min.js\"></script><script type=\"text/javascript\" src=\"https://fniessen.github.io/org-html-themes/styles/readtheorg/js/readtheorg.js\"></script>")
-
-(defvar ox-yaow--generated-files nil)
 
 (cl-defun ox-yaow--get-file-ordering-from-index-tree (tree &key (headline-fun ox-yaow-headlline-point-to-file-p))
   "Get the ordering of files suggested by headlines collected from TREE."

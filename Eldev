@@ -8,3 +8,6 @@
 ;(eldev-use-package-archive 'melpa-unstable)
 
 (setq eldev-test-framework 'buttercup)
+
+(eldev-add-extra-dependencies 'emacs 'htmlize)
+
