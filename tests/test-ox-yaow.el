@@ -82,6 +82,31 @@
 		    
 		    )
 
+	  (describe "ox-yaow--indexing-file-p"
+
+		    :var ((strings '("hi")))
+
+		    (it "should return true on file name in strings"
+			(expect (ox-yaow--indexing-file-p
+				 "/home/org/maths/number/hi.org"
+				 :strings strings)
+				:to-equal
+				t))
+
+		    (it "should return nil on file name not in strings and not named same as directory"
+			(expect (ox-yaow--indexing-file-p
+				 "/home/org/maths/number/normal-file.org"
+				 :strings strings)
+				:to-equal
+				nil))
+
+		    (it "should return true on file name same as directory"
+			(expect (ox-yaow--indexing-file-p
+				 "/home/org/maths/number/number.org"
+				 :strings strings)
+				:to-equal
+				t)))
+
 	  (describe "ox-yaow--get-default-indexing-file"
 
 		    (it "should return correct indexing file with string ending with slash"

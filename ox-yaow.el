@@ -63,14 +63,21 @@
   :group 'ox-yaow
   :type 'function)
 
+(defcustom ox-yaow-wiki-home-filename
+  "wiki"
+  "Name of the file to serve as the home page of the wiki."
+  :group 'ox-yaow
+  :type 'string)
+
 (defvar ox-yaow-html-head "<link rel=\"stylesheet\" type=\"text/css\" href=\"https://fniessen.github.io/org-html-themes/styles/readtheorg/css/htmlize.css\"/><link rel=\"stylesheet\" type=\"text/css\" href=\"https://fniessen.github.io/org-html-themes/styles/readtheorg/css/readtheorg.css\"/><script src=\"https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js\"></script><script src=\"https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js\"></script><script type=\"text/javascript\" src=\"https://fniessen.github.io/org-html-themes/styles/lib/js/jquery.stickytableheaders.min.js\"></script><script type=\"text/javascript\" src=\"https://fniessen.github.io/org-html-themes/styles/readtheorg/js/readtheorg.js\"></script>")
 
 (defvar ox-yaow--generated-files nil)
 
-(defun ox-yaow--indexing-file-p (file-path)
-  "Return t if the filename of FILE-PATH is 'index' or if the filename is equal to the directory name, else return nil."
+(cl-defun ox-yaow--indexing-file-p
+    (file-path &key (strings (list "index" ox-yaow-wiki-home-filename)))
+  "Return t if the filename of FILE-PATH in the list STRINGS (defaults to 'index' and ox-yaow-filename), or if the filename (without its file extension) is equal to the directory name, else return nil."
   (let ((base (f-base file-path)))
-    (or (string= base "index")
+    (or (let ((-compare-fn #'string=)) (-contains? strings base))
 	(string= (cadr (reverse (f-split file-path))) base))))
 
 (defun ox-yaow--get-default-indexing-file (path)
