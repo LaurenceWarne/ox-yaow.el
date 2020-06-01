@@ -185,14 +185,15 @@
 	 (prev-file (plist-get adj-files :preceding))
 	 (up-file (ox-yaow--get-up-file file-path))
 	 (base-html (org-html-template contents info)))
-    (print up-file)
-    (replace-regexp-in-string "<h1" (concat (funcall ox-yaow-html-link-stitching-fn
-						     file-path
-						     prev-file next-file up-file)
-					    "<h1")
-			      base-html)))
+    (if (string= filename ox-yaow-wiki-home-filename) base-html
+      (replace-regexp-in-string "<h1" (concat (funcall ox-yaow-html-link-stitching-fn
+						       file-path
+						       prev-file next-file up-file)
+					      "<h1")
+				base-html))))
 
-(defun ox-yaow--get-index-file-str (file-path file-path-list)
+(cl-defun ox-yaow--get-index-file-str
+    (file-path file-path-list &key (add-title t) (depth 1))
   "Return the contents of the indexing file FILE-PATH as a string, containing links to files in FILE-PATH-LIST."
   (let ((snd-level-headings
 	 (mapconcat
@@ -202,7 +203,8 @@
 		    (capitalize (s-replace "-" " " (f-base path)))))
 	  file-path-list ""))
 	(title (capitalize (s-replace "-" " " (f-base file-path)))))
-    (concat "#+TITLE: " title "\n* " title "\n" snd-level-headings)))
+    (concat (when add-title (concat "#+TITLE: " title "\n"))
+	    "* " title "\n" snd-level-headings)))
 
 (defun ox-yaow--prep-directory (directory-path)
   "Check if the (full) path described by DIRECTORY-PATH has an indexing file, if it does not, create one."
