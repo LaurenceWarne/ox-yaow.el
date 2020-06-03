@@ -193,18 +193,28 @@
 				base-html))))
 
 (cl-defun ox-yaow--get-index-file-str
-    (file-path file-path-list &key (add-title t) (depth 1))
+    (file-path file-path-list &key (add-title t) (depth 0)
+	       (propagation-fn #'f-entries) (propagate-p #'f-directory?))
   "Return the contents of the indexing file FILE-PATH as a string, containing links to files in FILE-PATH-LIST."
   (let ((snd-level-headings
 	 (mapconcat
 	  (lambda (path)
-	    (format "** [[./%s][%s]]\n"
-		    (f-swap-ext (f-relative path (f-dirname file-path)) "html")
-		    (capitalize (s-replace "-" " " (f-base path)))))
+	    (concat
+	     (format "** [[./%s][%s]]\n"
+		     (f-swap-ext (f-relative path (f-dirname file-path)) "html")
+		     (capitalize (s-replace "-" " " (f-base path))))
+	     (when (and (< 0 depth) (funcall propagate-p path))
+	       (let ((lower-str
+		      (ox-yaow--get-index-file-str path (funcall propagation-fn path)
+						   :depth (1- depth)
+						   :add-title nil
+						   :propagation-fn propagation-fn
+						   :propagate-p propagate-p)))
+		 (s-replace "* " "** " lower-str)))))
 	  file-path-list ""))
 	(title (capitalize (s-replace "-" " " (f-base file-path)))))
-    (concat (when add-title (concat "#+TITLE: " title "\n"))
-	    "* " title "\n" snd-level-headings)))
+    (concat (when add-title (concat "#+TITLE: " title "\n* " title "\n"))
+	    snd-level-headings)))
 
 (defun ox-yaow--prep-directory (directory-path)
   "Check if the (full) path described by DIRECTORY-PATH has an indexing file, if it does not, create one."
