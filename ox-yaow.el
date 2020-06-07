@@ -78,9 +78,11 @@
   (or (s-ends-with-p ".org" path)
       (and (f-directory-p path) (-any #'ox-yaow--org-assoc-file-p (f-entries path)))))
 
-(defun ox-yaow--org-entries (path)
+(defun ox-yaow--org-entries (path &optional ignore-indexing-files)
   "Return a list of org files and directories contianing org files resident in PATH."
-  (-filter #'ox-yaow--org-assoc-file-p (f-entries path)))
+  (-filter (lambda (path) (or (not ignore-indexing-files)
+			      (not (funcall ox-yaow-indexing-file-p path))))
+	   (-filter #'ox-yaow--org-assoc-file-p (f-entries path))))
 
 (cl-defun ox-yaow--indexing-file-p
     (file-path &key (strings (list "index" ox-yaow-wiki-home-filename)))
@@ -203,7 +205,8 @@
 
 (cl-defun ox-yaow--get-index-file-str
     (file-path file-path-list &key (add-title t) (depth 1)
-	       (propagation-fn #'ox-yaow--org-entries) (propagate-p #'f-directory?)
+	       (propagation-fn (lambda (path) (ox-yaow--org-entries path t)))
+	       (propagate-p #'f-directory?)
 	       (base-path file-path))
   "Return the contents of the indexing file FILE-PATH as a string, containing links to files in FILE-PATH-LIST."
   (let ((snd-level-headings
@@ -211,7 +214,9 @@
 	  (lambda (path)
 	    (concat
 	     (format "** [[./%s][%s]]\n"
-		     (f-swap-ext (f-relative path (f-dirname base-path)) "html")
+		     (f-swap-ext (f-relative (if (funcall propagate-p path)
+						 (funcall ox-yaow-get-default-indexing-file path)
+					       path) (f-dirname base-path)) "html")
 		     (capitalize (s-replace "-" " " (f-base path))))
 	     (when (and (< 0 depth) (funcall propagate-p path))
 	       (let ((lower-str
@@ -233,18 +238,12 @@
 	 (indexing-file (car (-filter ox-yaow-indexing-file-p files))))
     (when (not indexing-file)
       ;; Create file
-      (let* ((local-dirs (f-directories directory-path))
-	     (usable-dirs (-filter (lambda (dir)
-				     (--any? (s-ends-with-p ".org" it)
-					     (f-files dir nil t))) local-dirs))
-	     (lower-level-indices (--map (funcall ox-yaow-get-default-indexing-file it)
-					 usable-dirs))
-	     (indexing-file-name
+      (let ((indexing-file-name
 	      (funcall ox-yaow-get-default-indexing-file directory-path)))
 	(with-temp-buffer
 	  (insert (ox-yaow--get-index-file-str
 		   (funcall ox-yaow-get-default-indexing-file directory-path)
-		   (append files lower-level-indices)))
+		   (ox-yaow--org-entries directory-path t)))
 	  (write-region (point-min) (point-max) indexing-file-name)
 	  (setq ox-yaow--generated-files (cons indexing-file-name
 					       ox-yaow--generated-files)))))))

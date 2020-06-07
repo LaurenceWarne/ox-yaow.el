@@ -207,11 +207,11 @@
 				  :to-equal
 				  "#+TITLE: Algebra
 * Algebra
-** [[./algebra.html][Algebra]]
+** [[./algebra/algebra.html][Algebra]]
 *** [[./algebra/groups.html][Groups]]
 *** [[./algebra/symbols.html][Symbols]]
 ** [[./questions.html][Questions]]
-** [[./numbers.html][Numbers]]
+** [[./numbers/numbers.html][Numbers]]
 *** [[./algebra/one.html][One]]
 *** [[./algebra/two.html][Two]]
 ** [[./other-thing.html][Other Thing]]
