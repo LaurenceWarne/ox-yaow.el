@@ -73,6 +73,15 @@
 
 (defvar ox-yaow--generated-files nil)
 
+(defun ox-yaow--org-assoc-file-p (path)
+  "Return t if PATH is an org file or is a directory such that one of its subdirectories contains an org file, else return nil."
+  (or (s-ends-with-p ".org" path)
+      (and (f-directory-p path) (-any #'ox-yaow--org-assoc-file-p (f-entries path)))))
+
+(defun ox-yaow--org-entries (path)
+  "Return a list of org files and directories contianing org files resident in PATH."
+  (-filter #'ox-yaow--org-assoc-file-p (f-entries path)))
+
 (cl-defun ox-yaow--indexing-file-p
     (file-path &key (strings (list "index" ox-yaow-wiki-home-filename)))
   "Return t if the filename of FILE-PATH in the list STRINGS (defaults to 'index' and ox-yaow-filename), or if the filename (without its file extension) is equal to the directory name, else return nil."
@@ -193,15 +202,16 @@
 				base-html))))
 
 (cl-defun ox-yaow--get-index-file-str
-    (file-path file-path-list &key (add-title t) (depth 0)
-	       (propagation-fn #'f-entries) (propagate-p #'f-directory?))
+    (file-path file-path-list &key (add-title t) (depth 1)
+	       (propagation-fn #'ox-yaow--org-entries) (propagate-p #'f-directory?)
+	       (base-path file-path))
   "Return the contents of the indexing file FILE-PATH as a string, containing links to files in FILE-PATH-LIST."
   (let ((snd-level-headings
 	 (mapconcat
 	  (lambda (path)
 	    (concat
 	     (format "** [[./%s][%s]]\n"
-		     (f-swap-ext (f-relative path (f-dirname file-path)) "html")
+		     (f-swap-ext (f-relative path (f-dirname base-path)) "html")
 		     (capitalize (s-replace "-" " " (f-base path))))
 	     (when (and (< 0 depth) (funcall propagate-p path))
 	       (let ((lower-str
@@ -209,7 +219,8 @@
 						   :depth (1- depth)
 						   :add-title nil
 						   :propagation-fn propagation-fn
-						   :propagate-p propagate-p)))
+						   :propagate-p propagate-p
+						   :base-path base-path)))
 		 (s-replace "* " "** " lower-str)))))
 	  file-path-list ""))
 	(title (capitalize (s-replace "-" " " (f-base file-path)))))

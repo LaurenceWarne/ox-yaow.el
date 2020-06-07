@@ -159,7 +159,8 @@
 				 "/home/maths/maths.org"
 				 '("/home/maths/questions.org"
 				   "/home/maths/number/numbers.org"
-				   "/home/maths/other-thing.org"))
+				   "/home/maths/other-thing.org")
+				 :depth 0)
 				:to-equal
 				"#+TITLE: Maths
 * Maths
@@ -173,9 +174,45 @@
 				 '("/home/maths/questions.org"
 				   "/home/maths/number/numbers.org"
 				   "/home/maths/other-thing.org")
+				 :depth 0
 				 :add-title nil)
 				:to-equal
 				"** [[./questions.html][Questions]]
 ** [[./number/numbers.html][Numbers]]
 ** [[./other-thing.html][Other Thing]]
-"))))
+"))
+		    
+		    (it "should return sub-levels correctly"
+			(cl-flet ((custom-propagation-fn
+				   (path)
+				   (cond ((string= path "/maths/algebra")
+					  '("/maths/algebra/groups.org"
+					    "/maths/algebra/symbols.org"))
+					 ((string= path "/maths/numbers")
+					  '("/maths/algebra/one.org"
+					    "/maths/algebra/two.org"))))
+				  (custom-propagate-p
+				   (path)
+				   (or (string= path "/maths/algebra")
+				       (string= path "/maths/numbers"))))
+			  (expect (ox-yaow--get-index-file-str
+				   "/maths/algebra"
+				   '("/maths/algebra"
+				     "/maths/questions.org"
+				     "/maths/numbers"
+				     "/maths/other-thing.org")
+				   :depth 1
+				   :propagation-fn #'custom-propagation-fn
+				   :propagate-p #'custom-propagate-p)
+				  :to-equal
+				  "#+TITLE: Algebra
+* Algebra
+** [[./algebra.html][Algebra]]
+*** [[./algebra/groups.html][Groups]]
+*** [[./algebra/symbols.html][Symbols]]
+** [[./questions.html][Questions]]
+** [[./numbers.html][Numbers]]
+*** [[./algebra/one.html][One]]
+*** [[./algebra/two.html][Two]]
+** [[./other-thing.html][Other Thing]]
+")))))
