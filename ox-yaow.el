@@ -232,7 +232,7 @@
     (concat (when add-title (concat "#+TITLE: " title "\n* " title "\n"))
 	    snd-level-headings)))
 
-(defun ox-yaow--prep-directory (directory-path)
+(defun ox-yaow--prep-directory (directory-path &optional depth)
   "Check if the (full) path described by DIRECTORY-PATH has an indexing file, if it does not, create one."
   (let* ((files (f-files directory-path (lambda (f) (s-ends-with-p ".org" f))))
 	 (indexing-file (car (-filter ox-yaow-indexing-file-p files))))
@@ -243,20 +243,20 @@
 	(with-temp-buffer
 	  (insert (ox-yaow--get-index-file-str
 		   (funcall ox-yaow-get-default-indexing-file directory-path)
-		   (ox-yaow--org-entries directory-path t)))
+		   (ox-yaow--org-entries directory-path t)
+		   :depth (if depth depth 1)))
 	  (write-region (point-min) (point-max) indexing-file-name)
 	  (setq ox-yaow--generated-files (cons indexing-file-name
 					       ox-yaow--generated-files)))))))
 
 (defun ox-yaow-preparation-fn (project-alist)
   "Create temporary indexing files for the project described in PROJECT-ALIST."
-  (let ((src-dir (plist-get project-alist :base-directory)))
-    (cl-loop for directory in
-	     (f-directories src-dir (lambda (dir)
-				      (--any? (s-ends-with-p ".org" it)
-					     (f-files dir nil t))) t)
+  (let ((src-dir (plist-get project-alist :base-directory))
+	(depth (plist-get project-alist :ox-yaow-depth)))
+    (cl-loop for directory in (-filter #'ox-yaow--org-assoc-file-p
+				       (f-directories src-dir))
 	     do
-	     (ox-yaow--prep-directory directory))))
+	     (ox-yaow--prep-directory directory depth))))
 
 (defun ox-yaow-completion-fn (project-alist)
   "Remove temporary indexing files for the project described in PROJECT-ALIST."
