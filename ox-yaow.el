@@ -242,7 +242,7 @@
 	      (funcall ox-yaow-get-default-indexing-file directory-path)))
 	(with-temp-buffer
 	  (insert (ox-yaow--get-index-file-str
-		   (funcall ox-yaow-get-default-indexing-file directory-path)
+		   indexing-file-name
 		   (ox-yaow--org-entries directory-path t)
 		   :depth (if depth depth 1)))
 	  (write-region (point-min) (point-max) indexing-file-name)
@@ -254,14 +254,15 @@
   (let ((src-dir (plist-get project-alist :base-directory))
 	(depth (plist-get project-alist :ox-yaow-depth)))
     (cl-loop for directory in (-filter #'ox-yaow--org-assoc-file-p
-				       (f-directories src-dir))
+				       (f-directories src-dir nil t))
 	     do
 	     (ox-yaow--prep-directory directory depth))))
 
 (defun ox-yaow-completion-fn (project-alist)
   "Remove temporary indexing files for the project described in PROJECT-ALIST."
   (cl-loop for generated-file in ox-yaow--generated-files do
-	   (f-delete generated-file)
+	   ;; Just to be extra careful
+	   (when (f-exists-p generated-file) (f-delete generated-file))
 	   (message (concat "Deleted generated file: " generated-file)))
   (setq ox-yaow--generated-files nil))
 
