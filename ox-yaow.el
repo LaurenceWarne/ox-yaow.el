@@ -232,11 +232,16 @@
     (concat (when add-title (concat "#+TITLE: " title "\n* " title "\n"))
 	    snd-level-headings)))
 
-(defun ox-yaow--prep-directory (directory-path &optional depth)
-  "Check if the (full) path described by DIRECTORY-PATH has an indexing file, if it does not, create one."
+(defun ox-yaow--prep-directory (directory-path &optional depth no-log force)
+  "Create an indexing file at DIRECTORY-PATH if appropriate.
+Check if the (full) path described by DIRECTORY-PATH has an indexing file,
+if it does not, create one.
+If FORCE is non-nil then overwrite the existing indexing file.
+The created indexing file will show subdirectories up to DEPTH.
+If NO-LOG is non-nil then this file will not be removed."
   (let* ((files (f-files directory-path (lambda (f) (s-ends-with-p ".org" f))))
 	 (indexing-file (car (-filter ox-yaow-indexing-file-p files))))
-    (when (not indexing-file)
+    (when (or force (not indexing-file))
       ;; Create file
       (let ((indexing-file-name
 	      (funcall ox-yaow-get-default-indexing-file directory-path)))
@@ -246,8 +251,9 @@
 		   (ox-yaow--org-entries directory-path t)
 		   :depth (if depth depth 1)))
 	  (write-region (point-min) (point-max) indexing-file-name)
-	  (setq ox-yaow--generated-files (cons indexing-file-name
-					       ox-yaow--generated-files)))))))
+          (unless no-log
+            (setq ox-yaow--generated-files (cons indexing-file-name
+                                                 ox-yaow--generated-files))))))))
 
 (defun ox-yaow-preparation-fn (project-alist)
   "Create temporary indexing files for the project described in PROJECT-ALIST."
@@ -308,6 +314,21 @@ directory.
 
 Return output file name."
   (org-publish-org-to #'ox-yaow-html filename ".html" plist pub-dir))
+
+
+;; Interactive functions
+
+;;;###autoload
+(defun ox-yaow-generate-indexing-file (depth)
+  "Generate an indexing with for the directory which the current file resides.
+The indexing file will have depth DEPTH."
+  (interactive "nPlease input the indexing file depth: ")
+  (if buffer-file-name
+      (let* ((parent-dir (f-parent (buffer-file-name)))
+             (indexing-file (funcall ox-yaow-get-default-indexing-file parent-dir)))
+        (ox-yaow--prep-directory parent-dir 3 t t)
+        (find-file-other-window indexing-file))
+    (message "Not visiting a file!")))
 
 (provide 'ox-yaow)
 
