@@ -169,6 +169,14 @@
 	 (indexing-file (car (-filter indexing-file-p (f-files directory)))))
     (if indexing-file indexing-file (funcall get-default-indexing-file directory))))
 
+(defun ox-yaow--get-file-ordering-from-directory (directory-path &optional show-indexing-files)
+  (let ((indexing-file
+         (funcall ox-yaow-get-default-indexing-file directory-path)))
+    (if (f-exists-p indexing-file)
+        (--map (f-join directory-path it)
+               (ox-yaow--get-file-ordering-from-index indexing-file))
+      (ox-yaow--org-entries directory-path (not show-indexing-files)))))
+
 (cl-defun ox-yaow--get-adjacent-files
     (target-file file-list &key (indexing-file-p ox-yaow-indexing-file-p))
   "Get files before and after TARGET-FILE in FILE-LIST.  These should all be full file paths.  INDEXING-FILE-P is a predicate determining whether a given file should be treated as an indexing file."
@@ -205,7 +213,7 @@
 
 (cl-defun ox-yaow--get-index-file-str
     (file-path file-path-list &key (add-title t) (depth 1)
-	       (propagation-fn (lambda (path) (ox-yaow--org-entries path t)))
+	       (propagation-fn #'ox-yaow--get-file-ordering-from-directory)
 	       (propagate-p #'f-directory?)
 	       (base-path file-path))
   "Return the contents of the indexing file FILE-PATH as a string, containing links to files in FILE-PATH-LIST."
