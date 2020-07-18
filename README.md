@@ -4,6 +4,8 @@ ox-yaow - yet another org wiki, is a lightweight as-is org to html export option
 
 It's main use case is static site generation, perfect for publishing notes, etc to Jekyll. You can see an example [here](https://laurencewarne.github.io/wiki/wiki.html), which were generated from the org files located [here](https://github.com/LaurenceWarne/org-files).
 
+ox-yaow will generate hyperlinks at the top of html files between files in the same directory (in a similar manner to pages in the [Emacs Manual](https://www.gnu.org/software/emacs/manual/html_node/emacs/index.html)), in addition to create *indexing files* per directory which list the pages sourced from that directory (an equivalent example would be the [Modes](https://www.gnu.org/software/emacs/manual/html_node/emacs/Modes.html#Modes) page in the Emacs manual).
+
 ## Usage
 
 In order to use the package we will need to add a new project to ```org-publish-project-alist``` or edit an existing one:
@@ -62,7 +64,7 @@ Editing the file to:
 ** [[./functions.html][Functions]]
 ```
 
-Will give us the intended ordering.
+Will give us the intended ordering on the next export.
 
 ## Installation
 
