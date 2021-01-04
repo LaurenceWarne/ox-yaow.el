@@ -6,35 +6,50 @@ It's main use case is static site generation, perfect for publishing notes, etc 
 
 ox-yaow will generate hyperlinks at the top of html files between files in the same directory (in a similar manner to pages in the [Emacs Manual](https://www.gnu.org/software/emacs/manual/html_node/emacs/index.html)), in addition to create *indexing files* per directory which list the pages sourced from that directory (an equivalent example would be the [Modes](https://www.gnu.org/software/emacs/manual/html_node/emacs/Modes.html#Modes) page in the Emacs manual).
 
-## Usage
+## Installation + Usage
+
+You can use ![quelpa-use-package](https://github.com/quelpa/quelpa-use-package) to install the package.
 
 In order to use the package we will need to add a new project to ```org-publish-project-alist``` or edit an existing one:
 
 ```lisp
-(setq org-publish-project-alist
-	  '(("wiki"
-		  ;;-------------------------------
-		  ;; Standard org publish options
-		  ;;-------------------------------
-		  :base-directory "~/org/"
-		  :base-extension "org"
-		  :publishing-directory "~/wiki/"
-		  ;; We use css from read-the-org
-		  :html-head "<link rel=\"stylesheet\" type=\"text/css\" href=\"https://fniessen.github.io/org-html-themes/styles/readtheorg/css/htmlize.css\"/><link rel=\"stylesheet\" type=\"text/css\" href=\"https://fniessen.github.io/org-html-themes/styles/readtheorg/css/readtheorg.css\"/><script src=\"https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js\"></script><script src=\"https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js\"></script><script type=\"text/javascript\" src=\"https://fniessen.github.io/org-html-themes/styles/lib/js/jquery.stickytableheaders.min.js\"></script><script type=\"text/javascript\" src=\"https://fniessen.github.io/org-html-themes/styles/readtheorg/js/readtheorg.js\"></script>"
-		  :html-preamble t
-		  :recursive t
-		  :publishing-function ox-yaow-publish-to-html
-		  ;; Auto generates indexing files
-		  :preparation-function ox-yaow-preparation-fn
-		  ;; Removes auto-generated files
-		  :completion-function ox-yaow-completion-fn
-		  ;;------------------------------
-		  ;; Options specific to ox-yaow
-		  ;;------------------------------
-		  :ox-yaow-depth 1)))
+(use-package ox-yaow
+  :ensure nil
+  :quelpa (ox-yaow :fetcher github :repo "laurencewarne/ox-yaow.el" :upgrade t)
+  :config
+  ;; Stolen from https://github.com/fniessen/org-html-themes
+  (setq rto-css '("https://fniessen.github.io/org-html-themes/src/readtheorg_theme/css/htmlize.css"
+                  "https://fniessen.github.io/org-html-themes/src/readtheorg_theme/css/readtheorg.css")
+        rto-js '("https://fniessen.github.io/org-html-themes/src/lib/js/jquery.stickytableheaders.min.js"
+                 "https://fniessen.github.io/org-html-themes/src/readtheorg_theme/js/readtheorg.js")
+        extra-js '("https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"
+                   "https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js" )
+        ox-yaow-html-head (concat (mapconcat (lambda (url) (concat "<link rel=\"stylesheet\" type=\"text/css\" href=\"" url "\"/>\n")) rto-css "")
+                                  (mapconcat (lambda (url) (concat "<script src=\"" url "\"></script>\n")) (append rto-js extra-js) ""))
+        org-publish-project-alist (cons
+                                   `("wiki"
+                                     ;;-------------------------------
+                                     ;; Standard org publish options
+                                     ;;-------------------------------
+                                     :base-directory "~/org/"
+                                     :base-extension "org"
+                                     :publishing-directory "~/wiki/"
+                                     :html-head ,ox-yaow-html-head
+                                     :html-preamble t
+                                     :recursive t
+                                     :publishing-function ox-yaow-publish-to-html
+                                     ;; Auto generates indexing files
+                                     :preparation-function ox-yaow-preparation-fn
+                                     ;; Removes auto-generated files
+                                     :completion-function ox-yaow-completion-fn
+                                     ;;------------------------------
+                                     ;; Options specific to ox-yaow
+                                     ;;------------------------------
+                                     :ox-yaow-depth 1)
+                                   org-publish-project-alist)))
 ```
 
-With this set up we are good to go. We can then ```C-c C-e``` (```org-export-dispatch```) from within any org file in the project and select ```P``` to export our project.
+With this set up we are good to go. The standard org publish workflow can be used now: ```C-c C-e``` (```org-export-dispatch```) from within any org file in the project and select ```P``` to export our project, and then choose `wiki`.
 
 ## Configuration
 
@@ -53,7 +68,7 @@ For example, suppose the following is generated by a call to ```ox-yaow-generate
 ** [[./variables.html][Variables]]
 ```
 
-Editing the file to:
+Editing the file to (`avy-transpose-lines-in-region` is helpful here):
 
 ```
 #+TITLE: Elisp
@@ -65,17 +80,6 @@ Editing the file to:
 ```
 
 Will give us the intended ordering on the next export.
-
-## Installation
-
-You can use ![quelpa-use-package](https://github.com/quelpa/quelpa-use-package):
-
-```lisp
-(use-package ox-yaow
-    :ensure nil
-    :quelpa (ox-yaow :fetcher github :repo "LaurenceWarne/ox-yaow.el"))
-```
-
 
 ## Similar Packages
 
