@@ -74,12 +74,13 @@
 (defvar ox-yaow--generated-files nil)
 
 (defun ox-yaow--org-assoc-file-p (path)
-  "Return t if PATH is an org file or is a directory such that one of its subdirectories contains an org file, else return nil."
+  "Return t if PATH is an org file, or is a directory which is an ancestor of one, else return nil."
   (or (s-ends-with-p ".org" path)
-      (and (f-directory-p path) (-any #'ox-yaow--org-assoc-file-p (f-entries path)))))
+      (and (f-directory-p path)
+           (-any #'ox-yaow--org-assoc-file-p (f-entries path)))))
 
 (defun ox-yaow--org-entries (path &optional ignore-indexing-files)
-  "Return a list of org files and directories contianing org files resident in PATH."
+  "Return a list of org files and directories containing org files resident in PATH, if IGNORE-INDEXING-FILES is non-nil, skip indexing files."
   (-filter (lambda (path) (or (not ignore-indexing-files)
 			      (not (funcall ox-yaow-indexing-file-p path))))
 	   (-filter #'ox-yaow--org-assoc-file-p (f-entries path))))
@@ -93,9 +94,7 @@
 
 (defun ox-yaow--get-default-indexing-file (path)
   "Return PATH (a directory path) concatenated with 'filename.org' where filename is the name of the directory pointed to by PATH."
-  (concat path
-	  (when (not (char-equal ?/ (elt (reverse path) 0))) "/")
-	  (f-base path) ".org"))
+  (f-join path (f-swap-ext (f-base path) ".org")))
 
 (defun ox-yaow--html-link-stitching-fn (orig-file prev-file next-file up-file)
   "Return html with links to PREV-FILE, NEXT-FILE and UP-FILE if they are non-nil, where the links are relative to ORIG-FILE."
@@ -138,7 +137,7 @@
 	    html-path "'>" link-text "</a>")))
 
 (cl-defun ox-yaow--get-adjacent-strings (target-string strings &key (sort t))
-  "Return a plist with property :preceding as the string preceding TARGET-STRING in STRINGS, and :succeeding as the string succeeding TARGET-STRING in STRINGS.  nil is used in either case if no such string exists.  If order is t, then sort STRINGS first.  nil is used in place of strings if such a string does not exist.  nil is returned if TARGET-STRING is not in STRINGS."
+  "Return a plist with property :preceding as the string preceding TARGET-STRING in STRINGS, and :succeeding as the string succeeding TARGET-STRING in STRINGS.  nil is used in either case if no such string exists.  If SORT is t, then sort STRINGS first.  nil is used in place of strings if such a string does not exist.  nil is returned if TARGET-STRING is not in STRINGS."
   (let* ((sorted-strings (if sort (sort strings #'string-lessp) strings))
 	 (position (cl-position target-string strings :test #'string=)))
     (if position
@@ -151,13 +150,15 @@
 (defun ox-yaow--get-nav-links (prev-file next-file)
   "Return a html string consisting of links to PREV-FILE and NEXT-FILE.  If one is nil it is ignored."
   (concat
-   (when prev-file (concat "Previous: " (ox-yaow--get-html-relative-link
-					 prev-file
-					 (capitalize (s-replace "-" " " (f-base prev-file))))))
+   (when prev-file
+     (concat "Previous: " (ox-yaow--get-html-relative-link
+			   prev-file
+			   (capitalize (s-replace "-" " " (f-base prev-file))))))
    (when (and prev-file next-file) ", ")
-   (when next-file (concat "Next: " (ox-yaow--get-html-relative-link
-				     next-file
-				     (capitalize (s-replace "-" " " (f-base next-file))))))))
+   (when next-file
+     (concat "Next: " (ox-yaow--get-html-relative-link
+		       next-file
+		       (capitalize (s-replace "-" " " (f-base next-file))))))))
 
 (cl-defun ox-yaow--get-up-file
     (target-file-path &key (indexing-file-p ox-yaow-indexing-file-p)
@@ -191,6 +192,7 @@
 	    base-files)))
     (ox-yaow--get-adjacent-strings (f-base target-file)
 				   file-ordering
+                                   ;; TODO sort outside the function
 				   :sort (unless indexing-file))))
 
 (defun ox-yaow-template (contents info)
@@ -243,12 +245,13 @@
 (defun ox-yaow--prep-directory (directory-path &optional depth no-log force)
   "Create an indexing file at DIRECTORY-PATH if appropriate.
 Check if the (full) path described by DIRECTORY-PATH has an indexing file,
+
 if it does not, create one.
 If FORCE is non-nil then overwrite the existing indexing file.
 The created indexing file will show subdirectories up to DEPTH.
 If NO-LOG is non-nil then this file will not be removed."
   (let* ((files (f-files directory-path (lambda (f) (s-ends-with-p ".org" f))))
-	 (indexing-file (car (-filter ox-yaow-indexing-file-p files))))
+	 (indexing-file (-first ox-yaow-indexing-file-p files)))
     (when (or force (not indexing-file))
       ;; Create file
       (let ((indexing-file-name
