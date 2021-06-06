@@ -94,7 +94,7 @@
 
 (defun ox-yaow--get-default-indexing-file (path)
   "Return PATH (a directory path) concatenated with 'filename.org' where filename is the name of the directory pointed to by PATH."
-  (f-join path (f-swap-ext (f-base path) ".org")))
+  (f-join path (f-swap-ext (f-base path) "org")))
 
 (defun ox-yaow--html-link-stitching-fn (orig-file prev-file next-file up-file)
   "Return html with links to PREV-FILE, NEXT-FILE and UP-FILE if they are non-nil, where the links are relative to ORIG-FILE."
