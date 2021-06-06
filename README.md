@@ -1,6 +1,6 @@
 # Yet Another Org Wiki
 
-ox-yaow - yet another org wiki, is a lightweight as-is org to html export option. It doesn't require any modifications to existing org files, and instead uses the directory structure of the source files to generate links.
+ox-yaow - yet another org wiki, is a lightweight as-is org to html export option. It doesn't require any modifications to existing org files, and instead uses the directory structure of the source files to generate links between pages.
 
 It's main use case is static site generation, perfect for publishing notes, etc to Jekyll. You can see an example [here](https://laurencewarne.github.io/wiki/wiki.html), which were generated from the org files located [here](https://github.com/LaurenceWarne/org-files).
 

@@ -59,8 +59,9 @@
 
 (defcustom ox-yaow-html-link-stitching-fn
   #'ox-yaow--html-link-stitching-fn
-  "A function that takes the strings denoting file paths: prev-file, next-file and up-file as arguments (any of which may be nil) and returns valid html corresponding to linking to these files."
+  "A function that takes three strings (file-paths) as arguments, denoting the \"previous file\", \"next file\" and \"parent file\" respectively (any of which may be nil), and returns valid html corresponding to linking to these files."
   :group 'ox-yaow
+  ;; TODO can I put function of three args here?
   :type 'function)
 
 (defcustom ox-yaow-wiki-home-filename
@@ -219,6 +220,7 @@
 	       (propagate-p #'f-directory?)
 	       (base-path file-path))
   "Return the contents of the indexing file FILE-PATH as a string, containing links to files in FILE-PATH-LIST."
+  ;; TODO make indexing files have no header to avoid duplication with the title
   (let ((snd-level-headings
 	 (mapconcat
 	  (lambda (path)
