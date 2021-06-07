@@ -31,9 +31,7 @@ jobs:
     - name: Check out the source code
       uses: actions/checkout@v2
 
-    - name: Test the Project
+    - name: Test the project
       run: |
-        eldev test -u codecov
+        eldev test
         eldev -dtT -C compile --warnings-as-errors
-    - name: Upload the Test Coverage
-      run: bash <(curl -s https://codecov.io/bash)
