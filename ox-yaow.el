@@ -277,7 +277,7 @@ If NO-LOG is non-nil then this file will not be removed."
 	     do
 	     (ox-yaow--prep-directory directory depth))))
 
-(defun ox-yaow-completion-fn (project-alist)
+(defun ox-yaow-completion-fn (_)
   "Remove temporary indexing files for the project described in PROJECT-ALIST."
   (cl-loop for generated-file in ox-yaow--generated-files do
 	   ;; Just to be extra careful
@@ -326,7 +326,7 @@ Optional argument PUB-DIR, when non-nil is the publishing
 directory.
 
 Return output file name."
-  (org-publish-org-to #'ox-yaow-html filename ".html" plist pub-dir))
+  (org-publish-org-to 'ox-yaow-html filename ".html" plist pub-dir))
 
 
 ;; Interactive functions
