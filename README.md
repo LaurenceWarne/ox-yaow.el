@@ -6,6 +6,10 @@ It's main use case is static site generation, perfect for publishing notes, etc 
 
 ox-yaow will generate hyperlinks at the top of html files between files in the same directory (in a similar manner to pages in the [Emacs Manual](https://www.gnu.org/software/emacs/manual/html_node/emacs/index.html)), in addition to creating *indexing files* per directory which list the pages sourced from that directory (an equivalent example would be the [Modes](https://www.gnu.org/software/emacs/manual/html_node/emacs/Modes.html#Modes) page in the Emacs manual).
 
+Here is an example page (assets stolen from the brilliant [org html themes](https://github.com/fniessen/org-html-themes)).
+
+![ox-yaow example](assets/ox-yaow-example.png)
+
 ## Installation + Usage
 
 You can use ![quelpa-use-package](https://github.com/quelpa/quelpa-use-package) to install the package.
