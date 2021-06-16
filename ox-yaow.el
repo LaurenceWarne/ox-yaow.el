@@ -228,7 +228,6 @@
       ((to-title (file-path) (capitalize (s-replace "-" " " (f-base file-path))))
        (index-file-str-rec
         (file-path file-path-list depth base-path)
-        (print file-path-list)
         (mapconcat
 	 (lambda (path)
 	   (concat
@@ -282,8 +281,6 @@ If NO-LOG is non-nil then this file will not be removed."
   "Create temporary indexing files for the project described in PROJECT-ALIST."
   (let ((src-dir (plist-get project-alist :base-directory))
 	(depth (plist-get project-alist :ox-yaow-depth)))
-    (print "DEPTH-------------------")
-    (print depth)
     (cl-loop for directory in (-filter #'ox-yaow--org-assoc-file-p
 				       (f-directories src-dir nil t))
 	     do
