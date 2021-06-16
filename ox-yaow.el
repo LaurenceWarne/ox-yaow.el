@@ -127,11 +127,12 @@
   "Get the ordering of files in described by the file pointed to by INDEXING-FILE-PATH."
   (with-temp-buffer
     (insert-file-contents indexing-file-path)
-    (--map
-     ;; `f-swap-ext' will add the extension if none exists
-     (if (f-directory? (f-expand it (f-dirname indexing-file-path)))
-         it
-       (f-swap-ext it "org"))
+    (-map
+     (lambda (directory)
+       (if (f-directory? (f-expand directory (f-dirname indexing-file-path)))
+           directory
+         ;; `f-swap-ext' will add the extension if none exists
+         (f-swap-ext directory "org")))
      (ox-yaow--get-file-ordering-from-index-tree (org-element-parse-buffer)))))
 
 (cl-defun ox-yaow--get-html-relative-link
@@ -225,7 +226,7 @@
 (cl-defun ox-yaow--get-index-file-str (file-path file-path-list &key (depth 2))
   "Return the contents of the indexing file FILE-PATH as a string, containing links to files in FILE-PATH-LIST, recursing down DEPTH directories."
   (cl-labels
-      ((to-title (file-path) (capitalize (s-replace "-" " " (f-base file-path))))
+      ((to-title (path) (capitalize (s-replace "-" " " (f-base path))))
        (index-file-str-rec
         (file-path file-path-list depth base-path)
         (mapconcat
