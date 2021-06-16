@@ -7,7 +7,7 @@
 ;; Version: 0.1
 ;; Keywords: org
 ;; URL: https://github.com/LaurenceWarne/ox-yaow.el
-;; Package-Requires: ((emacs "26") (f "0.2.0") (s "1.12.0") (dash "2.17.0"))
+;; Package-Requires: ((emacs "27") (f "0.2.0") (s "1.12.0") (dash "2.17.0"))
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -77,7 +77,7 @@
 (defun ox-yaow--org-assoc-file-p (path)
   "Return t if PATH is an org file, or is a directory which is an ancestor of one, else return nil."
   (or (s-ends-with-p ".org" path)
-      (and (f-directory-p path)
+      (and (f-directory? path)
            (-any #'ox-yaow--org-assoc-file-p (f-entries path)))))
 
 (defun ox-yaow--org-entries (path &optional ignore-indexing-files)
@@ -88,7 +88,7 @@
 
 (cl-defun ox-yaow--indexing-file-p
     (file-path &key (strings (list "index" ox-yaow-wiki-home-filename)))
-  "Return t if the filename of FILE-PATH in the list STRINGS (defaults to 'index' and ox-yaow-filename), or if the filename (without its file extension) is equal to the directory name, else return nil."
+  "Return t if the filename of FILE-PATH is in the list STRINGS (defaults to 'index' and ox-yaow-filename), or if the filename (without its file extension) is equal to the directory name, else return nil."
   (let ((base (f-base file-path)))
     (or (let ((-compare-fn #'string=)) (-contains? strings base))
 	(string= (cadr (reverse (f-split file-path))) base))))
@@ -109,14 +109,15 @@
 	      (when up-file "</span>")
 	      "<hr>")))
 
-(cl-defun ox-yaow--get-file-ordering-from-index-tree (tree &key (headline-fun ox-yaow-headlline-point-to-file-p))
-  "Get the ordering of files suggested by headlines collected from TREE."
+(cl-defun ox-yaow--get-file-ordering-from-index-tree
+    (tree &key (headline-fn ox-yaow-headlline-point-to-file-p))
+  "Get the ordering of files without extensions suggested by headlines collected from TREE, use HEADLINE-FN to determine whether a given headline should be considered as a file."
   (let ((snd-level-headlines (org-element-map tree 'headline
 			       (lambda (hl)
-				 (and (funcall headline-fun hl) hl)))))
+				 (and (funcall headline-fn hl) hl)))))
     ;; Get raw headline and convert to "emacs case"
-    (--map (concat (downcase (s-replace " " "-" it)) ".org")
-	   ;; Kill links
+    (--map (downcase (s-replace " " "-" it))
+	   ;; Bit of a hack to remove links
 	   (--map (replace-regexp-in-string
 		   ".*\\[\\[.+\\]\\[\\(.+\\)\\]\\].*" "\\1"
 		   (org-element-property :raw-value it))
@@ -126,7 +127,12 @@
   "Get the ordering of files in described by the file pointed to by INDEXING-FILE-PATH."
   (with-temp-buffer
     (insert-file-contents indexing-file-path)
-    (ox-yaow--get-file-ordering-from-index-tree (org-element-parse-buffer))))
+    (--map
+     ;; `f-swap-ext' will add the extension if none exists
+     (if (f-directory? (f-expand it (f-dirname indexing-file-path)))
+         it
+       (f-swap-ext it "org"))
+     (ox-yaow--get-file-ordering-from-index-tree (org-element-parse-buffer)))))
 
 (cl-defun ox-yaow--get-html-relative-link
     (file-path link-text &key (reference-path file-path))
@@ -171,7 +177,9 @@
 	 (indexing-file (car (-filter indexing-file-p (f-files directory)))))
     (if indexing-file indexing-file (funcall get-default-indexing-file directory))))
 
-(defun ox-yaow--get-file-ordering-from-directory (directory-path &optional show-indexing-files)
+(defun ox-yaow--get-file-ordering-from-directory
+    (directory-path &optional show-indexing-files)
+  "Get the ordering of files in DIRECTORY-PATH, when SHOW-INDEXING-FILES is non-nil, also include indexing files."
   (let ((indexing-file
          (funcall ox-yaow-get-default-indexing-file directory-path)))
     (if (f-exists-p indexing-file)
@@ -214,35 +222,37 @@
 					      "<h1")
 				base-html))))
 
-(cl-defun ox-yaow--get-index-file-str
-    (file-path file-path-list &key (add-title t) (depth 1)
-	       (propagation-fn #'ox-yaow--get-file-ordering-from-directory)
-	       (propagate-p #'f-directory?)
-	       (base-path file-path))
-  "Return the contents of the indexing file FILE-PATH as a string, containing links to files in FILE-PATH-LIST."
-  ;; TODO make indexing files have no header to avoid duplication with the title
-  (let ((snd-level-headings
-	 (mapconcat
-	  (lambda (path)
-	    (concat
-	     (format "** [[./%s][%s]]\n"
-		     (f-swap-ext (f-relative (if (funcall propagate-p path)
-						 (funcall ox-yaow-get-default-indexing-file path)
-					       path) (f-dirname base-path)) "html")
-		     (capitalize (s-replace "-" " " (f-base path))))
-	     (when (and (< 0 depth) (funcall propagate-p path))
-	       (let ((lower-str
-		      (ox-yaow--get-index-file-str path (funcall propagation-fn path)
-						   :depth (1- depth)
-						   :add-title nil
-						   :propagation-fn propagation-fn
-						   :propagate-p propagate-p
-						   :base-path base-path)))
-		 (s-replace "* " "** " lower-str)))))
-	  file-path-list ""))
-	(title (capitalize (s-replace "-" " " (f-base file-path)))))
-    (concat (when add-title (concat "#+TITLE: " title "\n* " title "\n"))
-	    snd-level-headings)))
+(cl-defun ox-yaow--get-index-file-str (file-path file-path-list &key (depth 2))
+  "Return the contents of the indexing file FILE-PATH as a string, containing links to files in FILE-PATH-LIST, recursing down DEPTH directories."
+  (cl-labels
+      ((to-title (file-path) (capitalize (s-replace "-" " " (f-base file-path))))
+       (index-file-str-rec
+        (file-path file-path-list depth base-path)
+        (print file-path-list)
+        (mapconcat
+	 (lambda (path)
+	   (concat
+	    (format "** [[./%s][%s]]\n"
+		    (f-swap-ext
+                     (f-relative
+                      (if (f-directory? path)
+			  (funcall ox-yaow-get-default-indexing-file path)
+			path)
+                      (f-dirname base-path))
+                     "html")
+                    (to-title path))
+	    (when-let (((and (< 0 depth) (f-directory? path)))
+                       (lower-str
+		        (index-file-str-rec
+                         path
+                         (ox-yaow--get-file-ordering-from-directory path)
+			 (1- depth)
+                         base-path)))
+              (s-replace "* " "** " lower-str))))
+	 file-path-list "")))
+    (concat
+     "#+TITLE: " (to-title file-path) "\n"
+     (index-file-str-rec file-path file-path-list depth file-path))))
 
 (defun ox-yaow--prep-directory (directory-path &optional depth no-log force)
   "Create an indexing file at DIRECTORY-PATH if appropriate.
@@ -262,7 +272,7 @@ If NO-LOG is non-nil then this file will not be removed."
 	  (insert (ox-yaow--get-index-file-str
 		   indexing-file-name
 		   (ox-yaow--org-entries directory-path t)
-		   :depth (if depth depth 1)))
+		   :depth (or depth 1)))
 	  (write-region (point-min) (point-max) indexing-file-name)
           (unless no-log
             (setq ox-yaow--generated-files (cons indexing-file-name
@@ -272,6 +282,8 @@ If NO-LOG is non-nil then this file will not be removed."
   "Create temporary indexing files for the project described in PROJECT-ALIST."
   (let ((src-dir (plist-get project-alist :base-directory))
 	(depth (plist-get project-alist :ox-yaow-depth)))
+    (print "DEPTH-------------------")
+    (print depth)
     (cl-loop for directory in (-filter #'ox-yaow--org-assoc-file-p
 				       (f-directories src-dir nil t))
 	     do
@@ -339,7 +351,7 @@ The indexing file will have depth DEPTH."
   (if buffer-file-name
       (let* ((parent-dir (f-parent (buffer-file-name)))
              (indexing-file (funcall ox-yaow-get-default-indexing-file parent-dir)))
-        (ox-yaow--prep-directory parent-dir 3 t t)
+        (ox-yaow--prep-directory parent-dir depth t t)
         (find-file-other-window indexing-file))
     (message "Not visiting a file!")))
 
