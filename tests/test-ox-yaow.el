@@ -147,13 +147,16 @@
     (cl-defun index-file-str-stubbed-env
         (file-path
          file-path-list
+         &optional
+         file-blacklist
          &key (depth 2)
          (propagation-fn #'ignore)
          (propagate-p #'ignore))
       (cl-letf (((symbol-function 'ox-yaow--get-file-ordering-from-directory)
                  propagation-fn)
                 ((symbol-function 'f-directory?) propagate-p))
-        (ox-yaow--get-index-file-str file-path file-path-list :depth depth)))
+        (ox-yaow--get-index-file-str
+         file-path file-path-list file-blacklist :depth depth)))
 
     (it "should return correct string for files"
       (expect (index-file-str-stubbed-env
@@ -161,6 +164,7 @@
 	       '("/home/maths/questions.org"
 		 "/home/maths/number/numbers.org"
 		 "/home/maths/other-thing.org")
+               nil
 	       :depth 0)
 	      :to-equal
 	      "#+TITLE: Maths
@@ -171,7 +175,7 @@
     
     (it "should return sub-levels correctly"
       (cl-flet ((custom-propagation-fn
-		 (path)
+		 (path _ _)
 		 (cond ((string= path "/maths/algebra")
 			'("/maths/algebra/groups.org"
 			  "/maths/algebra/symbols.org"))
@@ -188,6 +192,7 @@
 		   "/maths/questions.org"
 		   "/maths/numbers"
 		   "/maths/other-thing.org")
+                 nil
 		 :depth 1
 		 :propagation-fn #'custom-propagation-fn
 		 :propagate-p #'custom-propagate-p)
