@@ -4,7 +4,7 @@
 
 ;; Author: Laurence Warne
 ;; Maintainer: Laurence Warne
-;; Version: 0.1
+;; Version: 1.0
 ;; Keywords: org
 ;; URL: https://github.com/LaurenceWarne/ox-yaow.el
 ;; Package-Requires: ((emacs "27") (f "0.2.0") (s "1.12.0") (dash "2.17.0"))
@@ -41,25 +41,34 @@
 
 (defcustom ox-yaow-headlline-point-to-file-p
   (lambda (hl) (= 2 (org-element-property :level hl)))
-  "A function that returns t if some headline element points to an org file, else nil."
+  "Predicate used to determine whether a headline points to a file."
   :group 'ox-yaow
   :type 'function)
 
 (defcustom ox-yaow-indexing-file-p
   #'ox-yaow--indexing-file-p
-  "A function that returns t if the file should be treated as an indexing file, else nil."
+  "Predicate used to determine whether a file is an indexing file."
   :group 'ox-yaow
   :type 'function)
 
 (defcustom ox-yaow-get-default-indexing-file
   #'ox-yaow--get-default-indexing-file
-  "A function which takes the file path of a directory (which is known to have no indexing file) as an argument and returns the path of an indexing file which should be created for this directory."
+  "The function used to get the indexing file from a directory.
+
+The function should take the file path of a directory (which is known to have
+ no indexing file) as an argument and return the path of an indexing file which
+should be created for this directory."
   :group 'ox-yaow
   :type 'function)
 
 (defcustom ox-yaow-html-link-stitching-fn
   #'ox-yaow--html-link-stitching-fn
-  "A function that takes three strings (file-paths) as arguments, denoting the \"previous file\", \"next file\" and \"parent file\" respectively (any of which may be nil), and returns valid html corresponding to linking to these files."
+  "The function used to create html links at the top of files.
+
+The function should take three strings (file-paths) as arguments, denoting
+the \"previous file\", \"next file\" and \"parent file\" respectively (any of
+which may be nil), and returns valid html corresponding to linking to these
+files."
   :group 'ox-yaow
   ;; TODO can I put function of three args here?
   :type 'function)
