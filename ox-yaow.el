@@ -5,7 +5,7 @@
 ;; Author: Laurence Warne
 ;; Maintainer: Laurence Warne
 ;; Version: 1.0
-;; Keywords: org
+;; Keywords: outlines, hypermedia
 ;; URL: https://github.com/LaurenceWarne/ox-yaow.el
 ;; Package-Requires: ((emacs "27") (f "0.2.0") (s "1.12.0") (dash "2.17.0"))
 
@@ -324,7 +324,7 @@ If NO-LOG is non-nil then this file will not be removed."
 
 (defun ox-yaow-org-export-to-html
     (&optional async subtreep visible-only body-only ext-plist)
-  "Call org-export-to-file with the specified arguments.
+  "Call `org-export-to-file' with the specified arguments.
 
 A non-nil optional argument ASYNC means the process should happen
 asynchronously.  The resulting buffer will then be accessible
