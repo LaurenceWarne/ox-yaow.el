@@ -328,10 +328,10 @@ If NO-LOG is non-nil then this file will not be removed."
 
 A non-nil optional argument ASYNC means the process should happen
 asynchronously.  The resulting buffer will then be accessible
-through the org-export-stack interface.
+through the `org-export-stack' interface.
 
 Optional arguments SUBTREEP, VISIBLE-ONLY, BODY-ONLY and
-EXT-PLIST are similar to those used in org-export-as, which
+EXT-PLIST are similar to those used in `org-export-as', which
 see."
   (let* ((extension ".html")
 	 (file (org-export-output-file-name extension subtreep))
