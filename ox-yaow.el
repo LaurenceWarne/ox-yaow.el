@@ -231,7 +231,7 @@
   (cl-labels
       ((to-title (path) (capitalize (s-replace "-" " " (f-base path))))
        (index-file-str-rec
-        (file-path file-path-list depth base-path)
+        (file-path-list depth base-path)
         (mapconcat
 	 (lambda (path)
 	   (concat
@@ -248,12 +248,12 @@
                         (files (ox-yaow--get-file-ordering-from-directory
                                 path nil file-blacklist))
                         (lower-str
-		         (index-file-str-rec path files (1- depth) base-path)))
+		         (index-file-str-rec files (1- depth) base-path)))
               (s-replace "* " "** " lower-str))))
 	 file-path-list "")))
     (concat
      "#+TITLE: " (to-title file-path) "\n"
-     (index-file-str-rec file-path file-path-list depth file-path))))
+     (index-file-str-rec file-path-list depth file-path))))
 
 (defun ox-yaow--prep-directory
     (directory-path &optional file-blacklist depth no-log force)
