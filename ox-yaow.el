@@ -80,10 +80,11 @@
       (and (f-directory? path)
            (-any #'ox-yaow--org-assoc-file-p (f-entries path)))))
 
-(defun ox-yaow--org-entries (path &optional ignore-indexing-files)
-  "Return a list of org files and directories containing org files resident in PATH, if IGNORE-INDEXING-FILES is non-nil, skip indexing files."
-  (-filter (lambda (path) (or (not ignore-indexing-files)
-			      (not (funcall ox-yaow-indexing-file-p path))))
+(defun ox-yaow--org-entries (path &optional ignore-indexing-files file-blacklist)
+  "Return a list of org files and directories containing org files resident in PATH, if IGNORE-INDEXING-FILES is non-nil, skip indexing files, skip files present in FILE-BLACKLIST."
+  (-filter (lambda (path) (and (or (not ignore-indexing-files)
+			           (not (funcall ox-yaow-indexing-file-p path)))
+                               (not (member path file-blacklist))))
 	   (-filter #'ox-yaow--org-assoc-file-p (f-entries path))))
 
 (cl-defun ox-yaow--indexing-file-p
@@ -179,19 +180,19 @@
     (if indexing-file indexing-file (funcall get-default-indexing-file directory))))
 
 (defun ox-yaow--get-file-ordering-from-directory
-    (directory-path &optional show-indexing-files)
-  "Get the ordering of files in DIRECTORY-PATH, when SHOW-INDEXING-FILES is non-nil, also include indexing files."
+    (directory-path &optional show-indexing-files file-blacklist)
+  "Get the ordering of files in DIRECTORY-PATH and not in FILE-BLACKLIST, when SHOW-INDEXING-FILES is non-nil, also include indexing files."
   (let ((indexing-file
          (funcall ox-yaow-get-default-indexing-file directory-path)))
     (if (f-exists-p indexing-file)
         (--map (f-join directory-path it)
                (ox-yaow--get-file-ordering-from-index indexing-file))
-      (ox-yaow--org-entries directory-path (not show-indexing-files)))))
+      (ox-yaow--org-entries directory-path (not show-indexing-files) file-blacklist))))
 
 (cl-defun ox-yaow--get-adjacent-files
-    (target-file file-list &key (indexing-file-p ox-yaow-indexing-file-p))
-  "Get files before and after TARGET-FILE in FILE-LIST.  These should all be full file paths.  INDEXING-FILE-P is a predicate determining whether a given file should be treated as an indexing file."
-  (let* ((indexing-file (car (-filter indexing-file-p file-list)))
+    (target-file file-list &optional file-blacklist &key (indexing-file-p ox-yaow-indexing-file-p))
+  "Get files before and after TARGET-FILE in FILE-LIST, ignoring files in FILE-BLACKLIST.  These should all be full file paths.  INDEXING-FILE-P is a predicate determining whether a given file should be treated as an indexing file."
+  (let* ((indexing-file (-first indexing-file-p file-list))
 	 (base-files (--map (f-base it) file-list))
 	 (file-ordering
 	  (if indexing-file
@@ -201,7 +202,8 @@
 			       (ox-yaow--get-file-ordering-from-index indexing-file)))
 	    base-files)))
     (ox-yaow--get-adjacent-strings (f-base target-file)
-				   file-ordering
+				   (--remove (member it file-blacklist)
+                                             file-ordering)
                                    ;; TODO sort outside the function
 				   :sort (unless indexing-file))))
 
@@ -223,8 +225,9 @@
 					      "<h1")
 				base-html))))
 
-(cl-defun ox-yaow--get-index-file-str (file-path file-path-list &key (depth 2))
-  "Return the contents of the indexing file FILE-PATH as a string, containing links to files in FILE-PATH-LIST, recursing down DEPTH directories."
+(cl-defun ox-yaow--get-index-file-str
+    (file-path file-path-list &optional file-blacklist &key (depth 2))
+  "Return the contents of the indexing file FILE-PATH as a string, containing links to files in FILE-PATH-LIST, but not in FILE-BLACKLIST, recursing down DEPTH directories."
   (cl-labels
       ((to-title (path) (capitalize (s-replace "-" " " (f-base path))))
        (index-file-str-rec
@@ -241,26 +244,27 @@
                       (f-dirname base-path))
                      "html")
                     (to-title path))
-	    (when-let (((and (< 0 depth) (f-directory? path)))
-                       (lower-str
-		        (index-file-str-rec
-                         path
-                         (ox-yaow--get-file-ordering-from-directory path)
-			 (1- depth)
-                         base-path)))
+	    (when-let* (((and (< 0 depth) (f-directory? path)))
+                        (files (ox-yaow--get-file-ordering-from-directory
+                                path nil file-blacklist))
+                        (lower-str
+		         (index-file-str-rec path files (1- depth) base-path)))
               (s-replace "* " "** " lower-str))))
 	 file-path-list "")))
     (concat
      "#+TITLE: " (to-title file-path) "\n"
      (index-file-str-rec file-path file-path-list depth file-path))))
 
-(defun ox-yaow--prep-directory (directory-path &optional depth no-log force)
+(defun ox-yaow--prep-directory
+    (directory-path &optional file-blacklist depth no-log force)
   "Create an indexing file at DIRECTORY-PATH if appropriate.
-Check if the (full) path described by DIRECTORY-PATH has an indexing file,
 
+Check if the (full) path described by DIRECTORY-PATH has an indexing file,
 if it does not, create one.
+
 If FORCE is non-nil then overwrite the existing indexing file.
 The created indexing file will show subdirectories up to DEPTH.
+Files present in FILE-BLACKLIST will not have links generated for them.
 If NO-LOG is non-nil then this file will not be removed."
   (let* ((files (f-files directory-path (lambda (f) (s-ends-with-p ".org" f))))
 	 (indexing-file (-first ox-yaow-indexing-file-p files)))
@@ -271,7 +275,8 @@ If NO-LOG is non-nil then this file will not be removed."
 	(with-temp-buffer
 	  (insert (ox-yaow--get-index-file-str
 		   indexing-file-name
-		   (ox-yaow--org-entries directory-path t)
+		   (ox-yaow--org-entries directory-path nil file-blacklist)
+                   file-blacklist
 		   :depth (or depth 1)))
 	  (write-region (point-min) (point-max) indexing-file-name)
           (unless no-log
@@ -280,12 +285,14 @@ If NO-LOG is non-nil then this file will not be removed."
 
 (defun ox-yaow-preparation-fn (project-alist)
   "Create temporary indexing files for the project described in PROJECT-ALIST."
-  (let ((src-dir (plist-get project-alist :base-directory))
-	(depth (plist-get project-alist :ox-yaow-depth)))
+  (let* ((src-dir (plist-get project-alist :base-directory))
+	 (depth (plist-get project-alist :ox-yaow-depth))
+         (file-blacklist (plist-get project-alist :ox-yaow-file-blacklist))
+         (file-blacklist-exp (-map #'f-expand file-blacklist)))
     (cl-loop for directory in (-filter #'ox-yaow--org-assoc-file-p
 				       (f-directories src-dir nil t))
 	     do
-	     (ox-yaow--prep-directory directory depth))))
+	     (ox-yaow--prep-directory directory file-blacklist-exp depth nil nil))))
 
 (defun ox-yaow-completion-fn (_)
   "Remove temporary indexing files for the project described in PROJECT-ALIST."
@@ -349,7 +356,7 @@ The indexing file will have depth DEPTH."
   (if buffer-file-name
       (let* ((parent-dir (f-parent (buffer-file-name)))
              (indexing-file (funcall ox-yaow-get-default-indexing-file parent-dir)))
-        (ox-yaow--prep-directory parent-dir depth t t)
+        (ox-yaow--prep-directory parent-dir nil depth t t)
         (find-file-other-window indexing-file))
     (message "Not visiting a file!")))
 
