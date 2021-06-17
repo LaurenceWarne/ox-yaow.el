@@ -49,7 +49,10 @@ In order to use the package we will need to add a new project to ```org-publish-
                                      ;;------------------------------
                                      ;; Options specific to ox-yaow
                                      ;;------------------------------
-                                     :ox-yaow-depth 1)
+                                     ;; Don't generate links for these files
+                                     :ox-yaow-file-blacklist ("~/org/maths/answers.org")
+                                     ;; Max depths of sub links on indexing files
+                                     :ox-yaow-depth 2)
                                    org-publish-project-alist)))
 ```
 
