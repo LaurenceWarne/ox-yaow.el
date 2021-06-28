@@ -23,15 +23,15 @@
 ;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 ;;; Commentary:
-;;
+
 ;; This package adds another org html export option which aims to provide a
 ;; lightweight wiki.
-;;
+
 ;; Example usage:
-;;
+
 ;; Assuming you have some org files in ~/org, first register a new project
 ;; using `org-publish-project-alist':
-;;
+
 ;; (setq rto-css '("https://fniessen.github.io/org-html-themes/src/readtheorg_theme/css/htmlize.css"
 ;;                   "https://fniessen.github.io/org-html-themes/src/readtheorg_theme/css/readtheorg.css")
 ;;         rto-js '("https://fniessen.github.io/org-html-themes/src/lib/js/jquery.stickytableheaders.min.js"
@@ -64,7 +64,7 @@
 ;;                                      ;; Max depths of sub links on indexing files
 ;;                                      :ox-yaow-depth 2)
 ;;                                    org-publish-project-alist))
-;; 
+
 ;; The project can then be published via `org-export-dispatch'
 ;;; Code:
 
@@ -123,13 +123,20 @@ files."
 (defvar ox-yaow--generated-files nil)
 
 (defun ox-yaow--org-assoc-file-p (path)
-  "Return t if PATH is an org file, or is a directory which is an ancestor of one, else return nil."
+  "Return t if PATH is associated with an org file.
+
+Return t if PATH points to an org file, or is a directory which is an ancestor
+of one, else return nil."
   (or (s-ends-with-p ".org" path)
       (and (f-directory? path)
            (-any #'ox-yaow--org-assoc-file-p (f-entries path)))))
 
 (defun ox-yaow--org-entries (path &optional ignore-indexing-files file-blacklist)
-  "Return a list of org files and directories containing org files resident in PATH, if IGNORE-INDEXING-FILES is non-nil, skip indexing files, skip files present in FILE-BLACKLIST."
+  "Return a list of files associated with org files in PATH.
+
+Return a list of org files and directories containing org files resident in
+PATH, if IGNORE-INDEXING-FILES is non-nil, skip indexing files, skip files
+present in FILE-BLACKLIST."
   (-filter (lambda (path) (and (or (not ignore-indexing-files)
 			           (not (funcall ox-yaow-indexing-file-p path)))
                                (not (member path file-blacklist))))
@@ -137,17 +144,27 @@ files."
 
 (cl-defun ox-yaow--indexing-file-p
     (file-path &key (strings (list "index" ox-yaow-wiki-home-filename)))
-  "Return t if the filename of FILE-PATH is in the list STRINGS (defaults to 'index' and ox-yaow-filename), or if the filename (without its file extension) is equal to the directory name, else return nil."
+  "Return t if FILE-PATH corresponds to an ox-yaow indexing file.
+
+A file is classed as an indexing if and only if the filename of FILE-PATH is in
+the list STRINGS (defaults to 'index' and ox-yaow-filename), or if the filename
+ (without its file extension) is equal to the directory name, else return nil."
   (let ((base (f-base file-path)))
     (or (let ((-compare-fn #'string=)) (-contains? strings base))
 	(string= (cadr (reverse (f-split file-path))) base))))
 
 (defun ox-yaow--get-default-indexing-file (path)
-  "Return PATH (a directory path) concatenated with 'filename.org' where filename is the name of the directory pointed to by PATH."
+  "Return the default indexing file name for PATH.
+
+Return PATH (a directory path) concatenated with 'filename.org' where filename
+is the name of the directory pointed to by PATH."
   (f-join path (f-swap-ext (f-base path) "org")))
 
 (defun ox-yaow--html-link-stitching-fn (orig-file prev-file next-file up-file)
-  "Return html with links to PREV-FILE, NEXT-FILE and UP-FILE if they are non-nil, where the links are relative to ORIG-FILE."
+  "Return html content linking the specified files.
+
+The html will contain links to PREV-FILE, NEXT-FILE and UP-FILE if they are
+non-nil, where the links are relative to ORIG-FILE."
     (let ((attributes (when (or prev-file next-file) "style='float: right;'")))
       (concat (ox-yaow--get-nav-links prev-file next-file)
 	      (when up-file (concat "<span " (when attributes attributes) ">Up: "))
@@ -160,7 +177,11 @@ files."
 
 (cl-defun ox-yaow--get-file-ordering-from-index-tree
     (tree &key (headline-fn ox-yaow-headlline-point-to-file-p))
-  "Get the ordering of files without extensions suggested by headlines collected from TREE, use HEADLINE-FN to determine whether a given headline should be considered as a file."
+  "Return the ordering of files suggested by TREE.
+
+Get the ordering of files without extensions suggested by headlines collected
+from TREE, using HEADLINE-FN to determine whether a given headline should be
+considered a file."
   (let ((snd-level-headlines (org-element-map tree 'headline
 			       (lambda (hl)
 				 (and (funcall headline-fn hl) hl)))))
@@ -173,7 +194,9 @@ files."
 		  snd-level-headlines))))
 
 (defun ox-yaow--get-file-ordering-from-index (indexing-file-path)
-  "Get the ordering of files in described by the file pointed to by INDEXING-FILE-PATH."
+  "Get the ordering of files described by INDEXING-FILE-PATH.
+
+INDEXING-FILE-PATH should be an indexing file."
   (with-temp-buffer
     (insert-file-contents indexing-file-path)
     (-map
@@ -186,15 +209,24 @@ files."
 
 (cl-defun ox-yaow--get-html-relative-link
     (file-path link-text &key (reference-path file-path))
-  "Return a HTML link element with text LINK-TEXT and href attribute equal to the path of FILE-PATH relative to REFERENCE-PATH, but with a .html extension."
+  "Return a HTML link element with text LINK-TEXT.
+
+The link element will have its href attribute equal to the path of FILE-PATH
+relative to REFERENCE-PATH, but with a .html extension."
   (let* ((relative-path (f-relative file-path (f-dirname reference-path)))
 	 (html-path (concat (f-no-ext relative-path) ".html")))
     (concat "<a href='"
-	    (when (not (char-equal ?. (elt html-path 0))) "./")
+	    (unless (char-equal ?. (elt html-path 0)) "./")
 	    html-path "'>" link-text "</a>")))
 
 (cl-defun ox-yaow--get-adjacent-strings (target-string strings &key (sort t))
-  "Return a plist with property :preceding as the string preceding TARGET-STRING in STRINGS, and :succeeding as the string succeeding TARGET-STRING in STRINGS.  nil is used in either case if no such string exists.  If SORT is t, then sort STRINGS first.  nil is used in place of strings if such a string does not exist.  nil is returned if TARGET-STRING is not in STRINGS."
+  "Return a plist of strings \"adjacent\" to TARGET-STRING.
+
+The plist will have the property :preceding as the string preceding
+TARGET-STRING in STRINGS, and :succeeding as the string succeeding
+TARGET-STRING in STRINGS.  nil is used in either case if no such string exists.
+If SORT is t, then sort STRINGS first.  nil is used in place of strings if such
+a string does not exist.  nil is returned if TARGET-STRING is not in STRINGS."
   (let* ((sorted-strings (if sort (sort strings #'string-lessp) strings))
 	 (position (cl-position target-string strings :test #'string=)))
     (if position
@@ -205,7 +237,9 @@ files."
       nil)))
 
 (defun ox-yaow--get-nav-links (prev-file next-file)
-  "Return a html string consisting of links to PREV-FILE and NEXT-FILE.  If one is nil it is ignored."
+  "Return a html string consisting of links to PREV-FILE and NEXT-FILE.
+
+If one is nil it is ignored."
   (concat
    (when prev-file
      (concat "Previous: " (ox-yaow--get-html-relative-link
@@ -220,7 +254,13 @@ files."
 (cl-defun ox-yaow--get-up-file
     (target-file-path &key (indexing-file-p ox-yaow-indexing-file-p)
 		      (get-default-indexing-file ox-yaow-get-default-indexing-file))
-  "If TARGET-FILE-PATH points to an indexing file (determined by INDEXING-FILE-P), return the path to the indexing file in the parent directory of TARGET-FILE-PATH (or return the result of GET-DEFAULT-INDEXING-FILE if no such file exists).  Else return the file path of the indexing file in the same directory as TARGET-FILE-PATH."
+  "Return the \"up file\" of the file pointed to by TARGET-FILE-PATH.
+
+If TARGET-FILE-PATH points to an indexing file (determined by INDEXING-FILE-P),
+return the path to the indexing file in the parent directory of
+TARGET-FILE-PATH (or return the result of GET-DEFAULT-INDEXING-FILE if no such
+file exists).  Else return the file path of the indexing file in the same
+directory as TARGET-FILE-PATH."
   (let* ((directory (if (funcall indexing-file-p target-file-path)
 		       (f-parent (f-parent target-file-path))
 		     (f-parent target-file-path)))
@@ -229,7 +269,9 @@ files."
 
 (defun ox-yaow--get-file-ordering-from-directory
     (directory-path &optional show-indexing-files file-blacklist)
-  "Get the ordering of files in DIRECTORY-PATH and not in FILE-BLACKLIST, when SHOW-INDEXING-FILES is non-nil, also include indexing files."
+  "Get the ordering of files in DIRECTORY-PATH and not in FILE-BLACKLIST.
+
+When SHOW-INDEXING-FILES is non-nil, also include indexing files."
   (let ((indexing-file
          (funcall ox-yaow-get-default-indexing-file directory-path)))
     (if (f-exists-p indexing-file)
@@ -239,7 +281,11 @@ files."
 
 (cl-defun ox-yaow--get-adjacent-files
     (target-file file-list &optional file-blacklist &key (indexing-file-p ox-yaow-indexing-file-p))
-  "Get files before and after TARGET-FILE in FILE-LIST, ignoring files in FILE-BLACKLIST.  These should all be full file paths.  INDEXING-FILE-P is a predicate determining whether a given file should be treated as an indexing file."
+  "Get files before and after TARGET-FILE in FILE-LIST.
+
+Files in FILE-BLACKLIST are ignored.  These should all be full file paths.
+INDEXING-FILE-P is a predicate used to determine whether a given file should be
+treated as an indexing file."
   (let* ((indexing-file (-first indexing-file-p file-list))
 	 (base-files (--map (f-base it) file-list))
 	 (file-ordering
@@ -256,7 +302,9 @@ files."
 				   :sort (unless indexing-file))))
 
 (defun ox-yaow-template (contents info)
-  "Transcode CONTENTS into yaow html format.  INFO is a plist used as a communication channel."
+  "Transcode CONTENTS into yaow html format.
+
+INFO is a plist used as a communication channel."
   (let* ((file-path (plist-get info :input-file))
 	 (filename (f-base file-path))
 	 (directory (f-dirname filename))
@@ -275,7 +323,10 @@ files."
 
 (cl-defun ox-yaow--get-index-file-str
     (file-path file-path-list &optional file-blacklist &key (depth 2))
-  "Return the contents of the indexing file FILE-PATH as a string, containing links to files in FILE-PATH-LIST, but not in FILE-BLACKLIST, recursing down DEPTH directories."
+  "Return the contents of the indexing file FILE-PATH as a string.
+
+The indexing file will contain links to files in FILE-PATH-LIST, but not in
+FILE-BLACKLIST, recursing down DEPTH directories."
   (cl-labels
       ((to-title (path) (capitalize (s-replace "-" " " (f-base path))))
        (index-file-str-rec
@@ -399,6 +450,7 @@ Return output file name."
 ;;;###autoload
 (defun ox-yaow-generate-indexing-file (depth)
   "Generate an indexing with for the directory which the current file resides.
+
 The indexing file will have depth DEPTH."
   (interactive "nPlease input the indexing file depth: ")
   (if buffer-file-name
