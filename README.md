@@ -1,4 +1,5 @@
 # Yet Another Org Wiki
+[![MELPA](https://melpa.org/packages/ox-yaow-badge.svg)](https://melpa.org/#/ox-yaow)
 
 ox-yaow - yet another org wiki, is a lightweight as-is org to html export option. It doesn't require any modifications to existing org files, and instead uses the directory structure of the source files to generate links between pages.
 
@@ -12,14 +13,10 @@ Here is an example page (assets stolen from the brilliant [org html themes](http
 
 ## Installation + Usage
 
-You can use ![quelpa-use-package](https://github.com/quelpa/quelpa-use-package) to install the package.
-
 In order to use the package we will need to add a new project to ```org-publish-project-alist``` or edit an existing one:
 
 ```lisp
 (use-package ox-yaow
-  :ensure nil
-  :quelpa (ox-yaow :fetcher github :repo "laurencewarne/ox-yaow.el" :upgrade t)
   :config
   ;; Stolen from https://github.com/fniessen/org-html-themes
   (setq rto-css '("https://fniessen.github.io/org-html-themes/src/readtheorg_theme/css/htmlize.css"

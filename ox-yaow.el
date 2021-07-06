@@ -78,7 +78,7 @@
   "A lightweight wiki export option."
   :group 'ox)
 
-(defcustom ox-yaow-headlline-point-to-file-p
+(defcustom ox-yaow-headline-point-to-file-p
   (lambda (hl) (= 2 (org-element-property :level hl)))
   "Predicate used to determine whether a headline points to a file."
   :group 'ox-yaow
@@ -176,7 +176,7 @@ non-nil, where the links are relative to ORIG-FILE."
 	      "<hr>")))
 
 (cl-defun ox-yaow--get-file-ordering-from-index-tree
-    (tree &key (headline-fn ox-yaow-headlline-point-to-file-p))
+    (tree &key (headline-fn ox-yaow-headline-point-to-file-p))
   "Return the ordering of files suggested by TREE.
 
 Get the ordering of files without extensions suggested by headlines collected
