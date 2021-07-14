@@ -83,7 +83,7 @@ Editing the file to (`avy-transpose-lines-in-region` is helpful here):
 ** [[./functions.html][Functions]]
 ```
 
-Will give us the intended ordering on the next export.
+Will give us the intended ordering on the next export.  A caveat to this is that we will need to re-generate this file every time we add a new file to our `Elisp` directory otherwise it will not be picked up.
 
 ## Similar Packages
 
