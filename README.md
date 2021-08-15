@@ -46,6 +46,8 @@ In order to use the package we will need to add a new project to ```org-publish-
                                      ;;------------------------------
                                      ;; Options specific to ox-yaow
                                      ;;------------------------------
+                                     ;; Page to be regarded as the "homepage"
+                                     :ox-yaow-wiki-home-file "~/org/wiki.org"
                                      ;; Don't generate links for these files
                                      :ox-yaow-file-blacklist ("~/org/maths/answers.org")
                                      ;; Max depths of sub links on indexing files

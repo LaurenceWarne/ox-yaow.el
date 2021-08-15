@@ -59,6 +59,8 @@
 ;;                                      ;;------------------------------
 ;;                                      ;; Options specific to ox-yaow
 ;;                                      ;;------------------------------
+;; 				     ;; Page to be regarded as the "homepage"
+;; 				     :ox-yaow-wiki-home-file "~/org/wiki.org"
 ;;                                      ;; Don't generate links for these files
 ;;                                      :ox-yaow-file-blacklist ("~/org/maths/answers.org")
 ;;                                      ;; Max depths of sub links on indexing files
@@ -112,12 +114,6 @@ files."
   ;; TODO can I put function of three args here?
   :type 'function)
 
-(defcustom ox-yaow-wiki-home-filename
-  "wiki"
-  "Name of the file to serve as the home page of the wiki."
-  :group 'ox-yaow
-  :type 'string)
-
 (defvar ox-yaow-html-head "<link rel=\"stylesheet\" type=\"text/css\" href=\"https://fniessen.github.io/org-html-themes/styles/readtheorg/css/htmlize.css\"/><link rel=\"stylesheet\" type=\"text/css\" href=\"https://fniessen.github.io/org-html-themes/styles/readtheorg/css/readtheorg.css\"/><script src=\"https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js\"></script><script src=\"https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js\"></script><script type=\"text/javascript\" src=\"https://fniessen.github.io/org-html-themes/styles/lib/js/jquery.stickytableheaders.min.js\"></script><script type=\"text/javascript\" src=\"https://fniessen.github.io/org-html-themes/styles/readtheorg/js/readtheorg.js\"></script>")
 
 (defvar ox-yaow--generated-files nil)
@@ -142,13 +138,12 @@ present in FILE-BLACKLIST."
                                (not (member path file-blacklist))))
 	   (-filter #'ox-yaow--org-assoc-file-p (f-entries path))))
 
-(cl-defun ox-yaow--indexing-file-p
-    (file-path &key (strings (list "index" ox-yaow-wiki-home-filename)))
+(cl-defun ox-yaow--indexing-file-p (file-path &key (strings (list "index")))
   "Return t if FILE-PATH corresponds to an ox-yaow indexing file.
 
 A file is classed as an indexing if and only if the filename of FILE-PATH is in
-the list STRINGS (defaults to 'index' and ox-yaow-filename), or if the filename
- (without its file extension) is equal to the directory name, else return nil."
+the list STRINGS (defaults to \"index\"), or if the filename (without its file
+extension) is equal to the directory name, else return nil."
   (let ((base (f-base file-path)))
     (or (let ((-compare-fn #'string=)) (-contains? strings base))
 	(string= (cadr (reverse (f-split file-path))) base))))
@@ -252,8 +247,10 @@ If one is nil it is ignored."
 		       (capitalize (s-replace "-" " " (f-base next-file))))))))
 
 (cl-defun ox-yaow--get-up-file
-    (target-file-path &key (indexing-file-p ox-yaow-indexing-file-p)
-		      (get-default-indexing-file ox-yaow-get-default-indexing-file))
+    (target-file-path
+     &key
+     (indexing-file-p ox-yaow-indexing-file-p)
+     (get-default-indexing-file ox-yaow-get-default-indexing-file))
   "Return the \"up file\" of the file pointed to by TARGET-FILE-PATH.
 
 If TARGET-FILE-PATH points to an indexing file (determined by INDEXING-FILE-P),
@@ -264,8 +261,8 @@ directory as TARGET-FILE-PATH."
   (let* ((directory (if (funcall indexing-file-p target-file-path)
 		       (f-parent (f-parent target-file-path))
 		     (f-parent target-file-path)))
-	 (indexing-file (car (-filter indexing-file-p (f-files directory)))))
-    (if indexing-file indexing-file (funcall get-default-indexing-file directory))))
+	 (indexing-file (-first indexing-file-p (f-files directory))))
+    (or indexing-file (funcall get-default-indexing-file directory))))
 
 (defun ox-yaow--get-file-ordering-from-directory
     (directory-path &optional show-indexing-files file-blacklist)
@@ -306,20 +303,28 @@ treated as an indexing file."
 
 INFO is a plist used as a communication channel."
   (let* ((file-path (plist-get info :input-file))
-	 (filename (f-base file-path))
+         (wiki-home-path (f-expand (plist-get info :ox-yaow-wiki-home-file)))
+         (filename (f-base file-path))
 	 (directory (f-dirname filename))
 	 (org-paths-same-level (f-files directory (lambda (file) (s-suffix? "org" file))))
 	 (adj-files (ox-yaow--get-adjacent-files filename org-paths-same-level))
 	 (next-file (plist-get adj-files :succeeding))
 	 (prev-file (plist-get adj-files :preceding))
-	 (up-file (ox-yaow--get-up-file file-path))
+         (indexing-file-fn
+          (lambda (f) (or (string= wiki-home-path f)
+                          (ox-yaow--indexing-file-p f))))
+	 (up-file (ox-yaow--get-up-file
+                   file-path
+                   :indexing-file-p
+                   indexing-file-fn))
 	 (base-html (org-html-template contents info)))
-    (if (string= filename ox-yaow-wiki-home-filename) base-html
-      (replace-regexp-in-string "<h1" (concat (funcall ox-yaow-html-link-stitching-fn
-						       file-path
-						       prev-file next-file up-file)
-					      "<h1")
-				base-html))))
+    (if (string= file-path wiki-home-path) base-html
+      (replace-regexp-in-string
+       "<h1" (concat (funcall ox-yaow-html-link-stitching-fn
+			      file-path
+			      prev-file next-file up-file)
+		     "<h1")
+       base-html))))
 
 (cl-defun ox-yaow--get-index-file-str
     (file-path file-path-list &optional file-blacklist &key (depth 2))
