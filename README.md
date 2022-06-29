@@ -19,47 +19,39 @@ In order to use the package we will need to add a new project to ```org-publish-
 (use-package ox-yaow
   :config
   ;; Stolen from https://github.com/fniessen/org-html-themes
-  (let* ((rto-css '("https://fniessen.github.io/org-html-themes/src/readtheorg_theme/css/htmlize.css" "https://fniessen.github.io/org-html-themes/src/readtheorg_theme/css/readtheorg.css"))
-         (rto-js '("https://fniessen.github.io/org-html-themes/src/lib/js/jquery.stickytableheaders.min.js" "https://fniessen.github.io/org-html-themes/src/readtheorg_theme/js/readtheorg.js"))
-         (extra-js '("https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js" "https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"))
-         (ox-yaow-html-head (concat (mapconcat (lambda (url) (concat "<link rel=\"stylesheet\" type=\"text/css\" href=\"" url "\"/>\n")) rto-css "")
-                                    (mapconcat (lambda (url) (concat "<script src=\"" url "\"></script>\n")) (append rto-js extra-js) ""))))
-    (setq org-publish-project-alist
-	  (append
-	   `(("wiki-pages"
-	      ;;-------------------------------
-	      ;; Standard org publish options
-	      ;;-------------------------------
-	      :base-directory "~/org/"
-	      :base-extension "org"
-	      :publishing-directory "~/wiki/"
-	      :html-head ,ox-yaow-html-head
-	      :html-preamble t
-	      :recursive t
-	      :publishing-function ox-yaow-publish-to-html
-	      ;; Auto generates indexing files
-	      :preparation-function ox-yaow-preparation-fn
-	      ;; Removes auto-generated files
-	      :completion-function ox-yaow-completion-fn
-	      ;;------------------------------
-	      ;; Options specific to ox-yaow
-	      ;;------------------------------
-	      ;; Page to be regarded as the "homepage"
-	      :ox-yaow-wiki-home-file "~/org/wiki.org"
-	      ;; Don't generate links for these files
-	      :ox-yaow-file-blacklist ("~/org/maths/answers.org")
-	      ;; Max depths of sub links on indexing files
-	      :ox-yaow-depth 2)
-	     ;; For static
-	     ("wiki-static"
-	      :base-directory "~/org/"
-	      :base-extension "css\\|js\\|png\\|jpg\\|gif\\|pdf\\|mp3\\|ogg\\|swf"
-	      :publishing-directory "~/wiki/"
-	      :recursive t
-              :publishing-function org-publish-attachment)
-	     ("wiki"
-	      :components ("wiki-pages" "wiki-static")))
-	   org-publish-project-alist))))
+  (setq org-publish-project-alist
+        (append
+         `(("wiki-pages"
+            ;;-------------------------------
+            ;; Standard org publish options
+            ;;-------------------------------
+            :base-directory "~/org/"
+            :base-extension "org"
+            :publishing-directory "~/wiki/"
+            :html-head ,ox-yaow-html-head
+            :html-preamble t
+            :recursive t
+            :publishing-function ox-yaow-publish-to-html
+            :preparation-function ox-yaow-preparation-fn
+            :completion-function ox-yaow-completion-fn
+            ;;------------------------------
+            ;; Options specific to ox-yaow
+            ;;------------------------------
+            ;; Page to be regarded as the "homepage"
+            :ox-yaow-wiki-home-file "~/org/wiki.org"
+            ;; Don't generate links for these files
+            :ox-yaow-file-blacklist ("~/org/maths/answers.org")
+             ;; Max depths of sub links on indexing files
+            :ox-yaow-depth 2)
+           ("wiki-static"
+            :base-directory "~/org/"
+            :base-extension "css\\|js\\|png\\|jpg\\|gif\\|pdf\\|mp3\\|ogg\\|swf"
+            :publishing-directory "~/wiki/"
+            :recursive t
+            :publishing-function org-publish-attachment)
+           ("wiki"
+            :components ("wiki-pages" "wiki-static")))
+         org-publish-project-alist)))
 ```
 
 With this set up we are good to go. The standard org publish workflow can be used now: ```C-c C-e``` (```org-export-dispatch```) from within any org file in the project and select ```P``` to export our project, and then choose `wiki`.

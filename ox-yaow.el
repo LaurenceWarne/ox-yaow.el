@@ -121,7 +121,37 @@ files."
   ;; TODO can I put function of three args here?
   :type 'function)
 
-(defvar ox-yaow-html-head "<link rel=\"stylesheet\" type=\"text/css\" href=\"https://fniessen.github.io/org-html-themes/styles/readtheorg/css/htmlize.css\"/><link rel=\"stylesheet\" type=\"text/css\" href=\"https://fniessen.github.io/org-html-themes/styles/readtheorg/css/readtheorg.css\"/><script src=\"https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js\"></script><script src=\"https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js\"></script><script type=\"text/javascript\" src=\"https://fniessen.github.io/org-html-themes/styles/lib/js/jquery.stickytableheaders.min.js\"></script><script type=\"text/javascript\" src=\"https://fniessen.github.io/org-html-themes/styles/readtheorg/js/readtheorg.js\"></script>")
+(defvar ox-yaow-html-head "<link rel=\"stylesheet\" type=\"text/css\" href=\"https://fniessen.github.io/org-html-themes/src/readtheorg_theme/css/htmlize.css\"/>
+<link rel=\"stylesheet\" type=\"text/css\" href=\"https://fniessen.github.io/org-html-themes/src/readtheorg_theme/css/readtheorg.css\"/>
+<script src=\"https://fniessen.github.io/org-html-themes/src/lib/js/jquery.stickytableheaders.min.js\"></script>
+<script src=\"https://fniessen.github.io/org-html-themes/src/readtheorg_theme/js/readtheorg.js\"></script>
+<script src=\"https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js\"></script>
+<script src=\"https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js\"></script>
+<script defer>
+window.onload = function(){
+let tags = document.getElementsByClassName('tag');
+for (let i = 0; i < tags.length; i++ ) {
+    var element = tags[i];
+    var parent = element.parentNode;
+    if (parent.tagName.startsWith('H')) {
+	var target = parent.parentNode
+	parent.style = 'display: inline';
+	var details = document.createElement('details');
+	var summary = document.createElement('summary');
+	details.style = 'display: inline';
+	//details.appendChild(target);
+	target.insertBefore(summary, parent);
+	summary.appendChild(parent);
+	while (target.childNodes.length > 0) {
+	    details.appendChild(target.childNodes[0]);
+	}
+	target.appendChild(details);
+    }
+}
+while (tags.length > 0) {
+    tags[0].remove();
+}
+}</script>")
 
 (defvar ox-yaow--generated-files nil)
 
@@ -310,7 +340,8 @@ treated as an indexing file."
 
 INFO is a plist used as a communication channel."
   (let* ((file-path (plist-get info :input-file))
-         (wiki-home-path (f-expand (plist-get info :ox-yaow-wiki-home-file)))
+         (wiki-home-path (-some--> (plist-get info :ox-yaow-wiki-home-file)
+                           (f-expand it)))
          (filename (f-base file-path))
 	 (directory (f-dirname filename))
 	 (org-paths-same-level (f-files directory (lambda (file) (s-suffix? "org" file))))
@@ -412,7 +443,6 @@ If NO-LOG is non-nil then this file will not be removed."
 	   (when (f-exists-p generated-file) (f-delete generated-file))
 	   (message (concat "Deleted generated file: " generated-file)))
   (setq ox-yaow--generated-files nil))
-
 
 ;; Export options
 
