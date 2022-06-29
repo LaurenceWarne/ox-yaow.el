@@ -141,11 +141,15 @@ for (let i = 0; i < tags.length; i++ ) {
 	details.style = 'display: inline';
 	//details.appendChild(target);
 	target.insertBefore(summary, parent);
+	//target.insertBefore(document.createElement('br'), parent.nextSibling);
+        target.insertBefore(document.createElement('br'), parent.nextSibling);
 	summary.appendChild(parent);
 	while (target.childNodes.length > 0) {
 	    details.appendChild(target.childNodes[0]);
 	}
 	target.appendChild(details);
+        target.appendChild(document.createElement('br'));
+        target.appendChild(document.createElement('br'));
     }
 }
 while (tags.length > 0) {
