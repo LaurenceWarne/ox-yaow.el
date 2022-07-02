@@ -58,6 +58,12 @@ With this set up we are good to go. The standard org publish workflow can be use
 
 In order to get code syntax highlighting on your html pages, you might want to install [htmlize](https://github.com/hniksic/emacs-htmlize).
 
+### Collapsable Sections
+
+A heading will automatically be exported as collapsed if it's marked with the `:collapsible:` tag, see [here](https://laurencewarne.github.io/wiki/maths/euler-library.html#org68369a9) for an example.
+
+Note the tag is also removed on export.
+
 ## Configuration
 
 In most cases it will be necessary to impose some kind of custom ordering to your note files. For example, by default directories and files are all sorted alphabetically which may be problem when your ```Functions``` page precedes your ```Introduction to Elisp``` page. Additionally you may want to add extra information to your indexing pages.
